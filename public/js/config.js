@@ -1,13 +1,14 @@
 // API Configuration
 // Automatically detects if running locally or in production
-
 const isLocalhost = window.location.hostname === 'localhost' || 
                     window.location.hostname === '127.0.0.1' ||
                     window.location.hostname.includes('local');
 
 // Set API base URL based on environment
-// Since frontend and backend are on same Render service, use relative path in production
-fetch("/api/products")
+// Use localhost in dev, relative path in production
+const API_BASE_URL = isLocalhost 
+  ? 'http://localhost:3000/api' 
+  : '/api';
 
 console.log('🌍 Environment:', isLocalhost ? 'Development (Local)' : 'Production (Render)');
 console.log('🔗 API Base URL:', API_BASE_URL);
