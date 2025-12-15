@@ -7,10 +7,10 @@ async function loadProducts(category = null) {
   container.innerHTML = '<div class="spinner"></div>';
   
   try {
-    let url = `${API_BASE_URL}/products`;
-    if (category) {
-      url += `?category=${category}`;
-    }
+    let url = `/api/products`;
+if (category) {
+  url += `?category=${encodeURIComponent(category)}`;
+}
     
     console.log('Fetching products from:', url);
     
