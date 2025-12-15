@@ -5,25 +5,33 @@ async function loadDashboardStats() {
       authenticatedFetch(`${API_BASE_URL}/products`),
       authenticatedFetch(`${API_BASE_URL}/orders`)
     ]);
-    
+
     const products = await productsRes.json();
     const orders = await ordersRes.json();
-    
-    const totalRevenue = orders.reduce(
-  (sum, order) => sum + Number(order.totalAmount || 0),
-  0
-);
 
+    // Check if response is valid
+    if (!Array.isArray(products)) {
+      console.error('Products response is not an array:', products);
+      return;
+    }
+    if (!Array.isArray(orders)) {
+      console.error('Orders response is not an array:', orders);
+      return;
+    }
+
+    const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
     const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'confirmed').length;
-    
+
     document.getElementById('total-products').textContent = products.length;
     document.getElementById('total-orders').textContent = orders.length;
     document.getElementById('total-revenue').textContent = `₱${totalRevenue.toLocaleString()}`;
     document.getElementById('pending-orders').textContent = pendingOrders;
+
   } catch (error) {
     console.error('Error loading stats:', error);
   }
 }
+
 
 // Add product form
 if (document.getElementById('add-product-form')) {

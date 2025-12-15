@@ -22,29 +22,39 @@ const db = firebase.firestore();
 
 // Helper function to get auth token
 async function getAuthToken() {
-  const user = auth.currentUser;
-  if (user) {
-    return await user.getIdToken();
-  }
-  return null;
+  return new Promise((resolve) => {
+    const user = firebase.auth().currentUser;
+    if (user) {
+      user.getIdToken().then(resolve).catch(() => resolve(null));
+    } else {
+      // Wait for auth state
+      const unsubscribe = firebase.auth().onAuthStateChanged((u) => {
+        unsubscribe();
+        if (u) {
+          u.getIdToken().then(resolve).catch(() => resolve(null));
+        } else {
+          resolve(null);
+        }
+      });
+    }
+  });
 }
 
 // Helper function for API calls with auth
 async function authenticatedFetch(url, options = {}) {
   const token = await getAuthToken();
-  
+
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers
   };
-  
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
-  console.log('Making authenticated request to:', url);
-  console.log('Has token:', !!token);
-  
+
+  console.log('Making authenticated request to:', url, 'Token exists:', !!token);
+
   return fetch(url, {
     ...options,
     headers
