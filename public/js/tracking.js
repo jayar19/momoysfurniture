@@ -1,14 +1,18 @@
 let map;
+let routeLine;
 let marker;
 let destinationMarker;
 
-// Initialize Google Maps
+const ORS_API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImEwYjgxYzFiNzMyODQxNmE5YTg5MzYyMWVjYzE3YTNlIiwiaCI6Im11cm11cjY0In0='; // Replace with your ORS key
+
+// Initialize Leaflet map
 function initMap() {
-  // Default center (Philippines)
-  map = new google.maps.Map(document.getElementById('map'), {
-    center: { lat: 10.3157, lng: 123.8854 }, // Cebu
-    zoom: 12
-  });
+  map = L.map('map').setView([10.3157, 123.8854], 12); // Cebu default
+
+  // Add OpenStreetMap tiles
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
 }
 
 // Load order tracking
@@ -21,29 +25,27 @@ async function loadOrderTracking() {
     window.location.href = '/orders.html';
     return;
   }
-  
+
   try {
     const response = await authenticatedFetch(`/orders/${orderId}`);
     const order = await response.json();
     
-    if (!response.ok) {
-      throw new Error(order.error);
-    }
-    
+    if (!response.ok) throw new Error(order.error || 'Failed to fetch order');
+
     displayOrderInfo(order);
-    
+
     if (order.currentLocation) {
-      updateMapLocation(order.currentLocation, order.shippingAddress);
+      updateMapLocation(order.currentLocation, order.shippingAddress, order.startLocation);
     } else {
       document.getElementById('tracking-status').innerHTML = `
         <div class="alert alert-error">
-          <p>This order is not yet out for delivery. Current status: ${order.deliveryStatus}</p>
+          <p>This order is not yet out for delivery. Status: ${order.deliveryStatus}</p>
         </div>
       `;
     }
-  } catch (error) {
-    console.error('Error loading order:', error);
-    alert('Failed to load order tracking: ' + error.message);
+  } catch (err) {
+    console.error('Error loading order:', err);
+    alert('Failed to load order tracking: ' + err.message);
     window.location.href = '/orders.html';
   }
 }
@@ -51,9 +53,7 @@ async function loadOrderTracking() {
 // Display order information
 function displayOrderInfo(order) {
   const infoDiv = document.getElementById('order-info');
-  const itemsList = order.items.map(item => 
-    `${item.productName} (x${item.quantity})`
-  ).join(', ');
+  const itemsList = order.items.map(item => `${item.productName} (x${item.quantity})`).join(', ');
   
   infoDiv.innerHTML = `
     <h2>Order #${order.id.substring(0, 8)}</h2>
@@ -64,64 +64,66 @@ function displayOrderInfo(order) {
   `;
 }
 
-// Update map with current location
-function updateMapLocation(currentLocation, destinationAddress) {
-  const currentPos = { lat: currentLocation.lat, lng: currentLocation.lng };
-  
-  // Clear existing markers
-  if (marker) marker.setMap(null);
-  if (destinationMarker) destinationMarker.setMap(null);
-  
+// Update map with current location and route
+async function updateMapLocation(currentLocation, destinationAddress, startLocation) {
+  // Remove existing route and markers
+  if (routeLine) map.removeLayer(routeLine);
+  if (marker) map.removeLayer(marker);
+  if (destinationMarker) map.removeLayer(destinationMarker);
+
   // Add current location marker
-  marker = new google.maps.Marker({
-    position: currentPos,
-    map: map,
-    title: 'Current Location',
-    icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+  marker = L.circleMarker([currentLocation.lat, currentLocation.lng], {
+    radius: 8,
+    color: 'blue',
+    fillColor: 'blue',
+    fillOpacity: 1
+  }).addTo(map);
+
+  // Geocode destination address using ORS geocode API
+  const geoRes = await fetch(`https://api.openrouteservice.org/geocode/search?api_key=${ORS_API_KEY}&text=${encodeURIComponent(destinationAddress)}`);
+  const geoData = await geoRes.json();
+  if (!geoData.features || geoData.features.length === 0) return alert('Cannot find destination location');
+
+  const destinationPos = geoData.features[0].geometry.coordinates; // [lng, lat]
+
+  // Add destination marker
+  destinationMarker = L.circleMarker([destinationPos[1], destinationPos[0]], {
+    radius: 8,
+    color: 'red',
+    fillColor: 'red',
+    fillOpacity: 1
+  }).addTo(map);
+
+  // Draw route using ORS directions
+  const routeRes = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
+    method: 'POST',
+    headers: {
+      'Authorization': ORS_API_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      coordinates: [
+        [startLocation.lng, startLocation.lat],
+        [destinationPos[0], destinationPos[1]]
+      ]
+    })
   });
-  
-  // Geocode destination address
-  const geocoder = new google.maps.Geocoder();
-  geocoder.geocode({ address: destinationAddress }, (results, status) => {
-    if (status === 'OK') {
-      const destinationPos = results[0].geometry.location;
-      
-      // Add destination marker
-      destinationMarker = new google.maps.Marker({
-        position: destinationPos,
-        map: map,
-        title: 'Destination',
-        icon: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
-      });
-      
-      // Draw route
-      const directionsService = new google.maps.DirectionsService();
-      const directionsRenderer = new google.maps.DirectionsRenderer({
-        map: map,
-        suppressMarkers: true
-      });
-      
-      directionsService.route({
-        origin: currentPos,
-        destination: destinationPos,
-        travelMode: 'DRIVING'
-      }, (result, status) => {
-        if (status === 'OK') {
-          directionsRenderer.setDirections(result);
-        }
-      });
-      
-      // Fit bounds to show both markers
-      const bounds = new google.maps.LatLngBounds();
-      bounds.extend(currentPos);
-      bounds.extend(destinationPos);
-      map.fitBounds(bounds);
-    }
-  });
-  
-  // Center map on current location
-  map.setCenter(currentPos);
-  
+
+  const routeData = await routeRes.json();
+
+  // Draw the route on map
+  routeLine = L.geoJSON(routeData, {
+    style: { color: 'blue', weight: 4 }
+  }).addTo(map);
+
+  // Fit map bounds
+  const bounds = L.latLngBounds([
+    [currentLocation.lat, currentLocation.lng],
+    [destinationPos[1], destinationPos[0]]
+  ]);
+  map.fitBounds(bounds);
+
+  // Update status
   document.getElementById('tracking-status').innerHTML = `
     <div class="alert alert-success">
       <p>📍 Your order is on the way!</p>
@@ -130,9 +132,11 @@ function updateMapLocation(currentLocation, destinationAddress) {
   `;
 }
 
-// Initialize
+// Initialize map when page loads
 if (document.getElementById('map')) {
-  // Wait for auth state
+  initMap();
+
+  // Wait for auth
   auth.onAuthStateChanged((user) => {
     if (user) {
       loadOrderTracking();

@@ -4,8 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
-<link rel="apple-touch-icon" href="/images/logo.png">
+  <link rel="apple-touch-icon" href="/images/logo.png">
   <title>Manage Orders - MOMOY'S Furniture Admin</title>
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  
   <link rel="stylesheet" href="/css/styles.css">
   <style>
     .form-control {
@@ -15,26 +19,51 @@
       border-radius: 5px;
       font-size: 1rem;
     }
-    
+
     #orders-table {
       font-size: 0.9rem;
+      width: 100%;
+      border-collapse: collapse;
     }
-    
-    #orders-table td {
+
+    #orders-table td, #orders-table th {
+      padding: 0.5rem;
+      border: 1px solid #ddd;
       vertical-align: middle;
     }
-    
+
     #orders-table button {
       white-space: nowrap;
+      margin: 0.2rem 0;
     }
+
+    .map-popup {
+      width: 250px;
+      height: 200px;
+    }
+
+    .leaflet-container {
+      height: 200px;
+      width: 100%;
+      border-radius: 5px;
+    }
+
+    .alert {
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 6px;
+    }
+
+    .alert-success { background-color: #d4edda; color: #155724; }
+    .alert-error { background-color: #f8d7da; color: #721c24; }
   </style>
 </head>
 <body>
   <nav>
     <div class="nav-container">
       <div class="nav-brand">
-  <img src="/images/logo.png" alt="Momoy's Furniture Logo" class="nav-logo">
-  <span>MOMOY'S Furniture - Admin</span>
+        <img src="/images/logo.png" alt="Momoy's Furniture Logo" class="nav-logo">
+        <span>MOMOY'S Furniture - Admin</span>
       </div>
       <ul class="nav-links">
         <li><a href="/admin/dashboard.html">Dashboard</a></li>
@@ -55,13 +84,13 @@
       <table id="orders-table">
         <thead>
           <tr>
-            <th style="min-width: 100px;">Order ID</th>
-            <th style="min-width: 100px;">Date</th>
-            <th style="min-width: 200px;">Items</th>
-            <th style="min-width: 100px;">Total</th>
-            <th style="min-width: 120px;">Delivery Status</th>
-            <th style="min-width: 120px;">Payment</th>
-            <th style="min-width: 250px;">Actions</th>
+            <th>Order ID</th>
+            <th>Date</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Delivery Status</th>
+            <th>Payment</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -71,63 +100,64 @@
         </tbody>
       </table>
     </div>
-    
+
     <div style="margin-top: 2rem; padding: 1.5rem; background: #ecf0f1; border-radius: 10px;">
       <h3>Quick Guide:</h3>
       <ul style="margin: 1rem 0; line-height: 2;">
         <li><strong>View:</strong> See complete order details</li>
         <li><strong>Update Status:</strong> Change order delivery status (processing, confirmed, in transit, delivered)</li>
-        <li><strong>Set Location:</strong> Add GPS coordinates for delivery tracking</li>
+        <li><strong>Set Location:</strong> Click on the map to update package location for delivery tracking</li>
       </ul>
       <p style="color: #7f8c8d; margin-top: 1rem;">
-        <strong>Note:</strong> Once you set a delivery location, customers can track their order in real-time using Google Maps.
+        <strong>Note:</strong> Once you set a delivery location, customers can track their order in real-time on the delivery map.
       </p>
     </div>
   </div>
 
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+  <!-- Your JS -->
   <script src="/js/config.js"></script>
   <script src="/js/firebase-config.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/admin.js"></script>
 
   <script>
-    // Wait for auth and verify admin before loading orders
+    // Ensure admin auth before loading orders
     let authChecked = false;
-    
+
     auth.onAuthStateChanged(async (user) => {
       if (authChecked) return;
       authChecked = true;
-      
+
       console.log('Auth state changed:', user ? user.email : 'Not logged in');
-      
+
       if (!user) {
-        console.log('No user, redirecting to login');
         window.location.href = '/login.html';
         return;
       }
-      
-      // Check if admin
+
       try {
         const userDoc = await db.collection('users').doc(user.uid).get();
         const isAdmin = userDoc.exists && userDoc.data().role === 'admin';
-        
-        console.log('Is admin:', isAdmin);
-        
+
         if (!isAdmin) {
           alert('Access denied. Admin only.');
           window.location.href = '/';
           return;
         }
-        
-        // User is authenticated and is admin, load orders
-        console.log('Loading orders...');
+
+        // Load orders
         loadAdminOrders();
-        
+
       } catch (error) {
-        console.error('Error checking admin status:', error);
+        console.error('Error verifying admin status:', error);
         alert('Error verifying admin status');
         window.location.href = '/';
       }

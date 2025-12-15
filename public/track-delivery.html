@@ -3,52 +3,68 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
-<link rel="apple-touch-icon" href="/images/logo.png">
-  <title>Track Delivery - MOMOY'S Furniture</title>
+  <title>Track Your Delivery</title>
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <!-- Optional: Tailwind / your CSS -->
   <link rel="stylesheet" href="/css/styles.css">
+
+  <style>
+    #map {
+      height: 500px;
+      width: 100%;
+      border-radius: 8px;
+      margin-top: 1rem;
+    }
+    .alert {
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 6px;
+    }
+    .alert-success { background-color: #d4edda; color: #155724; }
+    .alert-error { background-color: #f8d7da; color: #721c24; }
+  </style>
 </head>
-<body>
-  <nav>
-    <div class="nav-container">
-      <div class="nav-brand">
-  <img src="/images/logo.png" alt="Momoy's Furniture Logo" class="nav-logo">
-  <span>MOMOY'S Furniture</span>
-      </div>
-      <ul class="nav-links">
-        <li><a href="/">Home</a></li>
-        <li><a href="/products.html">Products</a></li>
-        <li><a href="/cart.html">Cart (<span id="cart-count">0</span>)</a></li>
-        <li><a href="/orders.html">My Orders</a></li>
-        <li><a href="#" id="logout-btn">Logout</a></li>
-      </ul>
-    </div>
-  </nav>
+<body class="bg-gray-100 font-sans">
 
-  <div class="container">
-    <h1>Track Your Delivery</h1>
-    
-    <div id="order-info" style="background: white; padding: 2rem; border-radius: 10px; margin-bottom: 2rem;">
-      <div class="spinner"></div>
-    </div>
-    
+  <header class="p-4 bg-blue-600 text-white">
+    <h1 class="text-2xl font-bold">Track Your Delivery</h1>
+  </header>
+
+  <main class="p-4 max-w-4xl mx-auto">
+    <!-- Order Info -->
+    <div id="order-info" class="bg-white p-4 rounded shadow"></div>
+
+    <!-- Tracking Status -->
     <div id="tracking-status"></div>
-    
-    <div id="map"></div>
-    
-    <div style="margin-top: 2rem; text-align: center;">
-      <a href="/orders.html" class="btn btn-secondary">Back to Orders</a>
-    </div>
-  </div>
 
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Back Button -->
+    <div class="mt-4">
+      <a href="/orders.html" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Back to Orders</a>
+    </div>
+  </main>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- Firebase & Auth -->
   <script src="/js/firebase-config.js"></script>
-  <script src="/js/auth.js"></script>
-  <script src="/js/products.js"></script>
-  <script src="/js/config.js"></script>
+
+  <!-- Tracking JS -->
   <script src="/js/tracking.js"></script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyATf6K9TSPI4hPIXivyDat0-xoWSjWSxak&callback=initMap" async defer></script>
+
+  <script>
+    // Wait until the map container is ready
+    document.addEventListener('DOMContentLoaded', () => {
+      if (document.getElementById('map')) {
+        // tracking.js handles map initialization and auth
+      }
+    });
+  </script>
 </body>
 </html>
