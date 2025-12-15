@@ -1,5 +1,4 @@
 // ===================== CONFIG & UTILS =====================
-const API_BASE_URL = 'https://momoysfurniture.onrender.com/api'; // make sure this matches your config
 
 function authenticatedFetch(url, options = {}) {
   const token = localStorage.getItem('authToken'); // or use Firebase token if using Firebase Auth

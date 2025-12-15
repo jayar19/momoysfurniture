@@ -4,16 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
-<link rel="apple-touch-icon" href="/images/logo.png">
+  <link rel="apple-touch-icon" href="/images/logo.png">
   <title>Admin Dashboard - MOMOY'S Furniture</title>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
+  <!-- Navigation -->
   <nav>
     <div class="nav-container">
       <div class="nav-brand">
-  <img src="/images/logo.png" alt="Momoy's Furniture Logo" class="nav-logo">
-  <span>MOMOY'S Furniture - Admin</span>
+        <img src="/images/logo.png" alt="Momoy's Furniture Logo" class="nav-logo">
+        <span>MOMOY'S Furniture - Admin</span>
       </div>
       <ul class="nav-links">
         <li><a href="/admin/dashboard.html">Dashboard</a></li>
@@ -25,9 +26,11 @@
     </div>
   </nav>
 
+  <!-- Main Container -->
   <div class="container">
     <h1>Admin Dashboard</h1>
-    
+
+    <!-- Dashboard Stats -->
     <div class="admin-stats">
       <div class="stat-card">
         <h3>Total Products</h3>
@@ -47,6 +50,7 @@
       </div>
     </div>
 
+    <!-- Products Table -->
     <div style="margin-top: 3rem;">
       <h2>Products</h2>
       <div style="margin-bottom: 1rem;">
@@ -74,6 +78,7 @@
     </div>
   </div>
 
+  <!-- Firebase & JS -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -83,44 +88,45 @@
   <script src="/js/admin.js"></script>
 
   <script>
-    // Wait for auth and verify admin before loading data
+    // --- Admin Authentication Check ---
     let authChecked = false;
-    
+
     auth.onAuthStateChanged(async (user) => {
       if (authChecked) return;
       authChecked = true;
-      
+
       console.log('Dashboard: Auth state changed:', user ? user.email : 'Not logged in');
-      
+
       if (!user) {
-        console.log('No user, redirecting to login');
         window.location.href = '/login.html';
         return;
       }
-      
-      // Check if admin
+
       try {
         const userDoc = await db.collection('users').doc(user.uid).get();
         const isAdmin = userDoc.exists && userDoc.data().role === 'admin';
-        
-        console.log('Is admin:', isAdmin);
-        
+
         if (!isAdmin) {
           alert('Access denied. Admin only.');
           window.location.href = '/';
           return;
         }
-        
-        // User is authenticated and is admin, load dashboard
-        console.log('Loading dashboard data...');
+
+        // Load dashboard stats and products
         loadDashboardStats();
         loadAdminProducts();
-        
+
       } catch (error) {
-        console.error('Error checking admin status:', error);
+        console.error('Error verifying admin status:', error);
         alert('Error verifying admin status');
         window.location.href = '/';
       }
+    });
+
+    // Logout button
+    document.getElementById('logout-btn')?.addEventListener('click', async () => {
+      await auth.signOut();
+      window.location.href = '/login.html';
     });
   </script>
 </body>
