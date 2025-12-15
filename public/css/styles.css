@@ -348,18 +348,20 @@ nav {
   background: #fff;
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+  color: #000;
 }
 
 
 .form-group {
   margin-bottom: 1.5rem;
+  color: #000;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;
-  color: #fff;
+  color: #000;
 }
 
 .form-group input,
@@ -370,11 +372,13 @@ nav {
   border: 1px solid var(--border-color);
   border-radius: 5px;
   font-size: 1rem;
+  color: #000;
 }
 
 .form-group textarea {
   resize: vertical;
   min-height: 100px;
+  color: #000;
 }
 
 /* Product Grid */
