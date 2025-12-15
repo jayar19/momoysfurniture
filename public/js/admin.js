@@ -1,8 +1,7 @@
 // ===================== CONFIG & UTILS =====================
 
-// admin.js or a separate utils.js
 async function authenticatedFetch(url, options = {}) {
-  // Wait for user to be available
+  // Wait for Firebase user
   const user = await new Promise((resolve, reject) => {
     const currentUser = auth.currentUser;
     if (currentUser) return resolve(currentUser);
@@ -14,20 +13,35 @@ async function authenticatedFetch(url, options = {}) {
     });
   });
 
-  const token = await user.getIdToken(); // Firebase ID token
+  // Get Firebase ID token
+  const token = await user.getIdToken();
 
+  // Merge headers
   const fetchOptions = {
     ...options,
     headers: {
-      ...(options.headers || {}),
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}` // send token
+      'Authorization': `Bearer ${token}`,
+      ...(options.headers || {})
     }
   };
 
-  return fetch(url, fetchOptions);
-}
+  const response = await fetch(url, fetchOptions);
 
+  // Check for non-JSON responses
+  const text = await response.text();
+  if (!response.ok) {
+    console.error('API error response:', text);
+    throw new Error(`${response.status} ${response.statusText}`);
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error('Response is not valid JSON:', text);
+    throw new Error('Invalid JSON response');
+  }
+}
 
 // ===================== MODAL FUNCTIONS =====================
 function showModal(title, contentHtml) {
