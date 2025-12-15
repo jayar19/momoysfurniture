@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
+<link rel="apple-touch-icon" href="/images/logo.png">
+  <title>Admin Dashboard - MOMOY'S Furniture</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <div class="nav-brand">
+  <img src="/images/logo.png" alt="Momoy's Furniture Logo" class="nav-logo">
+  <span>MOMOY'S Furniture - Admin</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="/admin/dashboard.html">Dashboard</a></li>
+        <li><a href="/admin/add-product.html">Add Product</a></li>
+        <li><a href="/admin/manage-orders.html">Manage Orders</a></li>
+        <li><a href="/" target="_blank">View Site</a></li>
+        <li><a href="#" id="logout-btn">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>Admin Dashboard</h1>
+    
+    <div class="admin-stats">
+      <div class="stat-card">
+        <h3>Total Products</h3>
+        <p id="total-products">-</p>
+      </div>
+      <div class="stat-card">
+        <h3>Total Orders</h3>
+        <p id="total-orders">-</p>
+      </div>
+      <div class="stat-card">
+        <h3>Total Revenue</h3>
+        <p id="total-revenue">₱-</p>
+      </div>
+      <div class="stat-card">
+        <h3>Pending Orders</h3>
+        <p id="pending-orders">-</p>
+      </div>
+    </div>
+
+    <div style="margin-top: 3rem;">
+      <h2>Products</h2>
+      <div style="margin-bottom: 1rem;">
+        <a href="/admin/add-product.html" class="btn btn-primary">Add New Product</a>
+      </div>
+      
+      <div class="data-table">
+        <table id="products-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="5" style="text-align: center;">Initializing...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/admin.js"></script>
+  <script>
+    // Wait for auth and verify admin before loading data
+    let authChecked = false;
+    
+    auth.onAuthStateChanged(async (user) => {
+      if (authChecked) return;
+      authChecked = true;
+      
+      console.log('Dashboard: Auth state changed:', user ? user.email : 'Not logged in');
+      
+      if (!user) {
+        console.log('No user, redirecting to login');
+        window.location.href = '/login.html';
+        return;
+      }
+      
+      // Check if admin
+      try {
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        const isAdmin = userDoc.exists && userDoc.data().role === 'admin';
+        
+        console.log('Is admin:', isAdmin);
+        
+        if (!isAdmin) {
+          alert('Access denied. Admin only.');
+          window.location.href = '/';
+          return;
+        }
+        
+        // User is authenticated and is admin, load dashboard
+        console.log('Loading dashboard data...');
+        loadDashboardStats();
+        loadAdminProducts();
+        
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        alert('Error verifying admin status');
+        window.location.href = '/';
+      }
+    });
+  </script>
+</body>
+</html>

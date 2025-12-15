@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
+<link rel="apple-touch-icon" href="/images/logo.png">
+  <title>Products - MOMOY'S Furniture</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <div class="nav-brand">
+  <img src="/images/logo.png" alt="Momoy's Furniture Logo" class="nav-logo">
+  <span>MOMOY'S Furniture</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/products.html">Products</a></li>
+        <li class="auth-required" style="display: none;"><a href="/cart.html">Cart (<span id="cart-count">0</span>)</a></li>
+        <li class="auth-required" style="display: none;"><a href="/orders.html">My Orders</a></li>
+        <li class="guest-only"><a href="/login.html">Login</a></li>
+        <li class="guest-only"><a href="/register.html">Register</a></li>
+        <li class="auth-required" style="display: none;"><a href="#" id="logout-btn">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+      <h1>Our Products</h1>
+      <div>
+        <label for="category-filter">Filter by Category: </label>
+        <select id="category-filter" style="padding: 0.5rem; border-radius: 5px; border: 1px solid #bdc3c7;">
+          <option value="">All Categories</option>
+          <option value="Living Room">Living Room</option>
+          <option value="Bedroom">Bedroom</option>
+          <option value="Dining Room">Dining Room</option>
+          <option value="Office">Office</option>
+          <option value="Outdoor">Outdoor</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="message" style="display: none;"></div>
+    
+    <div id="products-container" class="product-grid">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/products.js"></script>
+</body>
+</html>

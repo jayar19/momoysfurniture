@@ -1,0 +1,8 @@
+# Ignore the node_modules directory
+node_modules/
+
+# Ignore the .env file
+.env
+
+# Ignore the serviceAccountKey.json file
+serviceAccountKey.json

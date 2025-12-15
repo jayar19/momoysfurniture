@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
+<link rel="apple-touch-icon" href="/images/logo.png">
+  <title>Manage Orders - MOMOY'S Furniture Admin</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .form-control {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #bdc3c7;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    
+    #orders-table {
+      font-size: 0.9rem;
+    }
+    
+    #orders-table td {
+      vertical-align: middle;
+    }
+    
+    #orders-table button {
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <div class="nav-brand">
+  <img src="/images/logo.png" alt="Momoy's Furniture Logo" class="nav-logo">
+  <span>MOMOY'S Furniture - Admin</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="/admin/dashboard.html">Dashboard</a></li>
+        <li><a href="/admin/add-product.html">Add Product</a></li>
+        <li><a href="/admin/manage-orders.html">Manage Orders</a></li>
+        <li><a href="#" id="logout-btn">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+      <h1>Manage Orders</h1>
+      <button class="btn btn-secondary" onclick="loadAdminOrders()">🔄 Refresh</button>
+    </div>
+    
+    <div class="data-table" style="margin-top: 2rem; overflow-x: auto;">
+      <table id="orders-table">
+        <thead>
+          <tr>
+            <th style="min-width: 100px;">Order ID</th>
+            <th style="min-width: 100px;">Date</th>
+            <th style="min-width: 200px;">Items</th>
+            <th style="min-width: 100px;">Total</th>
+            <th style="min-width: 120px;">Delivery Status</th>
+            <th style="min-width: 120px;">Payment</th>
+            <th style="min-width: 250px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="7" style="text-align: center;">Initializing...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div style="margin-top: 2rem; padding: 1.5rem; background: #ecf0f1; border-radius: 10px;">
+      <h3>Quick Guide:</h3>
+      <ul style="margin: 1rem 0; line-height: 2;">
+        <li><strong>View:</strong> See complete order details</li>
+        <li><strong>Update Status:</strong> Change order delivery status (processing, confirmed, in transit, delivered)</li>
+        <li><strong>Set Location:</strong> Add GPS coordinates for delivery tracking</li>
+      </ul>
+      <p style="color: #7f8c8d; margin-top: 1rem;">
+        <strong>Note:</strong> Once you set a delivery location, customers can track their order in real-time using Google Maps.
+      </p>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/admin.js"></script>
+  <script>
+    // Wait for auth and verify admin before loading orders
+    let authChecked = false;
+    
+    auth.onAuthStateChanged(async (user) => {
+      if (authChecked) return;
+      authChecked = true;
+      
+      console.log('Auth state changed:', user ? user.email : 'Not logged in');
+      
+      if (!user) {
+        console.log('No user, redirecting to login');
+        window.location.href = '/login.html';
+        return;
+      }
+      
+      // Check if admin
+      try {
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        const isAdmin = userDoc.exists && userDoc.data().role === 'admin';
+        
+        console.log('Is admin:', isAdmin);
+        
+        if (!isAdmin) {
+          alert('Access denied. Admin only.');
+          window.location.href = '/';
+          return;
+        }
+        
+        // User is authenticated and is admin, load orders
+        console.log('Loading orders...');
+        loadAdminOrders();
+        
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        alert('Error verifying admin status');
+        window.location.href = '/';
+      }
+    });
+  </script>
+</body>
+</html>

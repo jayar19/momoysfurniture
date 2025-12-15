@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Orders API</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Test Orders API</h1>
+    
+    <div style="background: white; padding: 2rem; border-radius: 10px; margin: 2rem 0;">
+      <h2>User Info</h2>
+      <div id="user-info">Loading...</div>
+    </div>
+    
+    <div style="background: white; padding: 2rem; border-radius: 10px; margin: 2rem 0;">
+      <h2>API Test</h2>
+      <button id="test-btn" class="btn btn-primary">Test API Call</button>
+      <div id="api-result" style="margin-top: 1rem; white-space: pre-wrap; font-family: monospace; font-size: 0.9rem;"></div>
+    </div>
+    
+    <div style="background: white; padding: 2rem; border-radius: 10px; margin: 2rem 0;">
+      <h2>Console Logs</h2>
+      <div id="console-logs" style="background: #2c3e50; color: #ecf0f1; padding: 1rem; border-radius: 5px; font-family: monospace; font-size: 0.85rem; max-height: 400px; overflow-y: auto;"></div>
+    </div>
+    
+    <a href="/orders.html" class="btn btn-secondary">Go to Real Orders Page</a>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  
+  <script>
+    // Capture console logs
+    const consoleLogsDiv = document.getElementById('console-logs');
+    const originalLog = console.log;
+    const originalError = console.error;
+    
+    function addLog(type, ...args) {
+      const message = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+      ).join(' ');
+      
+      const logEntry = document.createElement('div');
+      logEntry.style.marginBottom = '0.5rem';
+      logEntry.style.color = type === 'error' ? '#e74c3c' : '#ecf0f1';
+      logEntry.textContent = `[${type.toUpperCase()}] ${new Date().toLocaleTimeString()}: ${message}`;
+      consoleLogsDiv.appendChild(logEntry);
+      consoleLogsDiv.scrollTop = consoleLogsDiv.scrollHeight;
+    }
+    
+    console.log = (...args) => {
+      originalLog(...args);
+      addLog('log', ...args);
+    };
+    
+    console.error = (...args) => {
+      originalError(...args);
+      addLog('error', ...args);
+    };
+    
+    // Wait for auth
+    auth.onAuthStateChanged(async (user) => {
+      const userInfoDiv = document.getElementById('user-info');
+      
+      if (!user) {
+        userInfoDiv.innerHTML = '<p style="color: #e74c3c;">Not logged in. <a href="/login.html">Login here</a></p>';
+        return;
+      }
+      
+      userInfoDiv.innerHTML = `
+        <p><strong>Email:</strong> ${user.email}</p>
+        <p><strong>User ID:</strong> ${user.uid}</p>
+        <p><strong>Token:</strong> ${(await user.getIdToken()).substring(0, 30)}...</p>
+      `;
+      
+      console.log('User logged in:', user.email);
+      console.log('User ID:', user.uid);
+    });
+    
+    // Test button
+    document.getElementById('test-btn').addEventListener('click', async () => {
+      const resultDiv = document.getElementById('api-result');
+      resultDiv.textContent = 'Testing...';
+      
+      const user = auth.currentUser;
+      
+      if (!user) {
+        resultDiv.textContent = 'Error: Not logged in';
+        console.error('No user logged in');
+        return;
+      }
+      
+      try {
+        console.log('=== Starting API Test ===');
+        
+        // Get token
+        const token = await user.getIdToken();
+        console.log('Got token:', token ? 'Yes' : 'No');
+        
+        // Build URL
+        const url = `http://localhost:3000/api/orders/user/${user.uid}`;
+        console.log('URL:', url);
+        
+        // Make request
+        console.log('Making fetch request...');
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+        
+        // Get response text
+        const responseText = await response.text();
+        console.log('Response text:', responseText);
+        
+        // Try to parse JSON
+        let data;
+        try {
+          data = JSON.parse(responseText);
+          console.log('Parsed JSON successfully');
+        } catch (e) {
+          console.error('JSON parse error:', e);
+          resultDiv.textContent = `Error: Invalid JSON response\n\n${responseText}`;
+          return;
+        }
+        
+        // Display result
+        if (response.ok) {
+          console.log('Success! Orders:', data.length);
+          resultDiv.textContent = `✅ SUCCESS!\n\nFound ${data.length} order(s)\n\n${JSON.stringify(data, null, 2)}`;
+          resultDiv.style.color = '#27ae60';
+        } else {
+          console.error('API error:', data);
+          resultDiv.textContent = `❌ ERROR!\n\nStatus: ${response.status}\n\n${JSON.stringify(data, null, 2)}`;
+          resultDiv.style.color = '#e74c3c';
+        }
+        
+        console.log('=== Test Complete ===');
+        
+      } catch (error) {
+        console.error('Test failed:', error);
+        resultDiv.textContent = `❌ EXCEPTION!\n\n${error.message}\n\n${error.stack}`;
+        resultDiv.style.color = '#e74c3c';
+      }
+    });
+  </script>
+</body>
+</html>

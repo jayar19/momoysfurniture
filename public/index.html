@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
+<link rel="apple-touch-icon" href="/images/logo.png">
+  <title>MOMOY'S Furniture - Home</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <div class="nav-brand">
+  <img src="/images/logo.png" alt="Momoy's Furniture Logo" class="nav-logo">
+  <span>MOMOY'S Furniture</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/products.html">Products</a></li>
+        <li class="auth-required" style="display: none;"><a href="/cart.html">Cart (<span id="cart-count">0</span>)</a></li>
+        <li class="auth-required" style="display: none;"><a href="/orders.html">My Orders</a></li>
+        <li class="guest-only"><a href="/login.html">Login</a></li>
+        <li class="guest-only"><a href="/register.html">Register</a></li>
+        <li class="auth-required" style="display: none;"><a href="#" id="logout-btn">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="hero">
+  <div class="hero-content">
+    <div class="hero-text">
+      <h1>Welcome to MOMOY'S Furniture</h1>
+      <p>Quality furniture for your home with flexible payment options</p>
+      <a href="/products.html" class="btn btn-primary">Shop Now</a>
+    </div>
+
+    <div class="hero-image">
+      <img src="/images/couch.png" alt="Furniture Showcase">
+    </div>
+  </div>
+</div>
+
+ <section class="featured-section">
+  <h2>Featured Products</h2>
+
+  <div class="masonry-grid">
+    <div class="product-card">
+      <img src="/images/modernsofa.jpg" alt="Sofa">
+      <div class="overlay"><h3>Sofa</h3></div>
+    </div>
+    <div class="product-card">
+      <img src="/images/classictable.jpg" alt="Dining Set">
+      <div class="overlay"><h3>Dining Set</h3></div>
+    </div>
+    <div class="product-card">
+      <img src="/images/couch.png" alt="Bedroom Set">
+      <div class="overlay"><h3>Bedroom Set</h3></div>
+    </div>
+    <div class="product-card">
+      <img src="/images/modernchair.jpg" alt="Office Chair">
+      <div class="overlay"><h3>Office Chair</h3></div>
+    </div>
+    <div class="product-card">
+      <img src="/images/bg2.jpg" alt="Armchair">
+      <div class="overlay"><h3>Armchair</h3></div>
+    </div>
+    <div class="product-card">
+      <img src="/images/hero.jpg" alt="Coffee Table">
+      <div class="overlay"><h3>Coffee Table</h3></div>
+    </div>
+  </div>
+</section>
+
+
+  <div class="container">
+    <section style="text-align: center; padding: 3rem 0;">
+      <h2>Why Choose Us?</h2>
+      <div class="product-grid" style="margin-top: 2rem;">
+        <div class="product-card">
+          <div class="product-info">
+            <h3>🪑 Quality Furniture</h3>
+            <p>Handpicked furniture pieces that combine style and durability for your home.</p>
+          </div>
+        </div>
+        <div class="product-card">
+          <div class="product-info">
+            <h3>💰 Flexible Payment</h3>
+            <p>Pay only 30% down payment and settle the balance upon delivery.</p>
+          </div>
+        </div>
+        <div class="product-card">
+          <div class="product-info">
+            <h3>🚚 Track Delivery</h3>
+            <p>Real-time delivery tracking with Google Maps integration.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section style="text-align: center; padding: 3rem 0; background: white; border-radius: 10px; margin-top: 2rem;">
+      <h2>Ready to Get Started?</h2>
+      <p style="margin: 1rem 0;">Browse our collection of quality furniture</p>
+      <a href="/products.html" class="btn btn-secondary">View Products</a>
+    </section>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/products.js"></script>
+</body>
+</html>

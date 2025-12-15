@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
+<link rel="apple-touch-icon" href="/images/logo.png">
+  <title>Register - MOMOY'S Furniture</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="formbody">
+  <nav>
+    <div class="nav-container">
+      <div class="nav-brand">
+  <img src="/images/logo.png" alt="Momoy's Furniture Logo" class="nav-logo">
+  <span>MOMOY'S Furniture</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/products.html">Products</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="form-container">
+      <h2 style="text-align: center; margin-bottom: 2rem;">Create Your Account</h2>
+      
+      <div id="message" style="display: none;"></div>
+      
+      <form id="register-form">
+        <div class="form-group">
+          <label for="fullName">Full Name</label>
+          <input type="text" id="fullName" required placeholder="Ernesto D. Aniñon Jr">
+        </div>
+        
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" required placeholder="your@email.com">
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" required placeholder="At least 6 characters" minlength="6">
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Register</button>
+      </form>
+      
+      <p style="text-align: center; margin-top: 1rem;">
+        Already have an account? <a href="/login.html">Login here</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+</body>
+</html>
