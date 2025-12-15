@@ -269,71 +269,76 @@ if (document.getElementById('edit-product-form')) {
 }
 
 // Load orders for admin
-const ordersTableBody = document.querySelector('#orders-table tbody');
-
-// Load all orders
 async function loadAdminOrders() {
-  ordersTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Loading...</td></tr>`;
+  const tbody = document.querySelector('#orders-table tbody');
+  
+  if (!tbody) return;
+  
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Loading orders...</td></tr>';
   
   try {
+    // Wait a bit for auth to be ready
+    const user = auth.currentUser;
+    if (!user) {
+      console.log('No user logged in, waiting...');
+      await new Promise(resolve => {
+        const unsubscribe = auth.onAuthStateChanged(authUser => {
+          if (authUser) {
+            unsubscribe();
+            resolve();
+          }
+        });
+      });
+    }
+    
+    console.log('Loading admin orders...');
     const response = await authenticatedFetch(`${API_BASE_URL}/orders`);
-    if (!response.ok) throw new Error('Failed to fetch orders');
-
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to load orders');
+    }
+    
     const orders = await response.json();
-
+    console.log('Loaded orders:', orders.length);
+    
     if (orders.length === 0) {
-      ordersTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No orders found.</td></tr>`;
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No orders found yet.</td></tr>';
       return;
     }
-
-    ordersTableBody.innerHTML = ''; // clear table
-    orders.forEach(order => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${order.id}</td>
-        <td>${new Date(order.createdAt).toLocaleString()}</td>
-        <td>${order.items.map(i => i.name).join(', ')}</td>
-        <td>₱${order.total.toFixed(2)}</td>
-        <td>${order.status}</td>
-        <td>${order.paymentStatus}</td>
-        <td>
-          <button class="btn btn-primary" onclick="viewOrderDetails('${order.id}')">View</button>
-        </td>
+    
+    tbody.innerHTML = orders.map(order => {
+      const itemsList = order.items.map(item => `${item.productName} (x${item.quantity})`).join(', ');
+      const statusColor = getStatusColor(order.deliveryStatus);
+      const createdDate = new Date(order.createdAt).toLocaleDateString();
+      
+      return `
+        <tr>
+          <td>#${order.id.substring(0, 8)}</td>
+          <td>${createdDate}</td>
+          <td style="font-size: 0.9rem;">${itemsList}</td>
+          <td>₱${order.totalAmount.toLocaleString()}</td>
+          <td><span style="background: ${statusColor}; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem;">${order.deliveryStatus}</span></td>
+          <td>${order.paymentStatus.replace('_', ' ')}</td>
+          <td>
+            <button class="btn btn-secondary" onclick="viewOrderDetails('${order.id}')" style="margin-bottom: 0.5rem; font-size: 0.85rem;">View</button>
+            <button class="btn btn-primary" onclick="openUpdateStatusModal('${order.id}', '${order.deliveryStatus}')" style="margin-bottom: 0.5rem; font-size: 0.85rem;">Update Status</button>
+            <button class="btn btn-primary" onclick="openSetLocationModal('${order.id}')" style="font-size: 0.85rem;">Set Location</button>
+          </td>
+        </tr>
       `;
-      ordersTableBody.appendChild(tr);
-    });
-
+    }).join('');
   } catch (error) {
     console.error('Error loading orders:', error);
-    ordersTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Error loading orders</td></tr>`;
-  }
-}
-
-// View single order details
-async function viewOrderDetails(orderId) {
-  try {
-    const response = await authenticatedFetch(`${API_BASE_URL}/orders/${orderId}`);
-    if (!response.ok) throw new Error('Failed to load order');
-
-    const order = await response.json();
-
-    // Example: show order details in a modal
-    let details = `
-      Order ID: ${order.id}\n
-      Date: ${new Date(order.createdAt).toLocaleString()}\n
-      Status: ${order.status}\n
-      Payment: ${order.paymentStatus}\n
-      Items:\n
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 2rem;">
+          <p style="color: #e74c3c; margin-bottom: 1rem;">⚠️ Failed to load orders</p>
+          <p style="color: #7f8c8d; margin-bottom: 1rem;">${error.message}</p>
+          <button class="btn btn-primary" onclick="loadAdminOrders()">🔄 Try Again</button>
+        </td>
+      </tr>
     `;
-    order.items.forEach(item => {
-      details += ` - ${item.name} x${item.quantity} (₱${item.price.toFixed(2)})\n`;
-    });
-
-    alert(details); // Replace with your modal implementation
-
-  } catch (error) {
-    console.error('Error loading order details:', error);
-    alert('Error: Could not load order details.');
   }
 }
 

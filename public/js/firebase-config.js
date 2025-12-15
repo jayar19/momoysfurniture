@@ -42,10 +42,23 @@ async function getAuthToken() {
 
 // Helper function for API calls with auth
 async function authenticatedFetch(url, options = {}) {
-  const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
-  const headers = { 'Content-Type': 'application/json', ...options.headers };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  return fetch(url, { ...options, headers });
+  const token = await getAuthToken();
+
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  console.log('Making authenticated request to:', url, 'Token exists:', !!token);
+
+  return fetch(url, {
+    ...options,
+    headers
+  });
 }
 
 // Check auth state
