@@ -17,11 +17,11 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // API base URL - Make sure this is correct
-const API_BASE_URL = window.location.hostname.includes('localhost')
-  ? 'http://localhost:3000/api'
-  : '/api';
+if (!window.API_BASE_URL) {
+  console.error('❌ API_BASE_URL is missing. config.js not loaded.');
+}
 
-console.log('API Base URL:', API_BASE_URL);
+const API_BASE_URL = window.API_BASE_URL;
 
 // ------------------- Helper: Get Firebase ID Token -------------------
 async function getAuthToken() {
