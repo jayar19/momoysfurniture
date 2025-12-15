@@ -4,18 +4,17 @@ const isLocalhost = window.location.hostname === 'localhost' ||
                     window.location.hostname === '127.0.0.1' ||
                     window.location.hostname.includes('local');
 
-// Set API base URL based on environment
-// Use localhost in dev, relative path in production
+// Use localhost in dev, full domain in production
 const API_BASE_URL = isLocalhost 
   ? 'http://localhost:3000/api' 
-  : '/api';
+  : 'https://momoysfurniture.onrender.com/api';
 
 console.log('🌍 Environment:', isLocalhost ? 'Development (Local)' : 'Production (Render)');
 console.log('🔗 API Base URL:', API_BASE_URL);
 console.log('📍 Current URL:', window.location.href);
 
-// Export for use in other scripts
 window.API_BASE_URL = API_BASE_URL;
+
 
 // Test backend connection on load
 fetch(`${API_BASE_URL}/health`)
