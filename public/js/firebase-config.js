@@ -21,32 +21,29 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // Helper function to get auth token
+// Get the current Firebase ID token
 async function getAuthToken() {
-  return new Promise((resolve) => {
-    const user = firebase.auth().currentUser;
-    if (user) {
-      user.getIdToken().then(resolve).catch(() => resolve(null));
-    } else {
-      // Wait for auth state
-      const unsubscribe = firebase.auth().onAuthStateChanged((u) => {
-        unsubscribe();
-        if (u) {
-          u.getIdToken().then(resolve).catch(() => resolve(null));
-        } else {
-          resolve(null);
-        }
-      });
-    }
-  });
+  const user = auth.currentUser;
+  if (!user) return null;
+
+  try {
+    // Force refresh to get a valid token
+    const token = await user.getIdToken(true);
+    return token;
+  } catch (error) {
+    console.error('Error fetching Firebase ID token:', error);
+    return null;
+  }
 }
 
-// Helper function for API calls with auth
+// Make authenticated fetch requests
 async function authenticatedFetch(url, options = {}) {
   const token = await getAuthToken();
 
+  // Merge headers
   const headers = {
     'Content-Type': 'application/json',
-    ...options.headers
+    ...(options.headers || {})
   };
 
   if (token) {
@@ -55,11 +52,28 @@ async function authenticatedFetch(url, options = {}) {
 
   console.log('Making authenticated request to:', url, 'Token exists:', !!token);
 
-  return fetch(url, {
-    ...options,
-    headers
-  });
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers
+    });
+
+    // Optional: handle 401/403 globally
+    if (response.status === 401) {
+      console.warn('Unauthorized request. Redirecting to login...');
+      window.location.href = '/login.html';
+    } else if (response.status === 403) {
+      console.warn('Forbidden request. Access denied.');
+      alert('Access denied. Admin only.');
+    }
+
+    return response;
+  } catch (error) {
+    console.error('Error in authenticatedFetch:', error);
+    throw error;
+  }
 }
+
 
 // Check auth state
 auth.onAuthStateChanged((user) => {

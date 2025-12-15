@@ -1,42 +1,43 @@
 const admin = require('firebase-admin');
 
-// Verify Firebase ID token
+// Middleware to verify Firebase ID token
 async function verifyToken(req, res, next) {
-  const idToken = req.headers.authorization?.split('Bearer ')[1];
-  
+  const authHeader = req.headers.authorization || '';
+  const idToken = authHeader.split('Bearer ')[1];
+
   if (!idToken) {
     return res.status(401).json({ error: 'No token provided' });
   }
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
-    req.user = decodedToken;
+    req.user = decodedToken; // attach user info to request
     next();
   } catch (error) {
+    console.error('Token verification failed:', error);
     return res.status(401).json({ error: 'Invalid token' });
   }
 }
 
-// Verify admin role
+// Middleware to allow only admins
 async function verifyAdmin(req, res, next) {
-  const idToken = req.headers.authorization?.split('Bearer ')[1];
-  
-  if (!idToken) {
-    return res.status(401).json({ error: 'No token provided' });
+  const user = req.user; // already verified by verifyToken
+
+  if (!user) {
+    return res.status(401).json({ error: 'User not authenticated' });
   }
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const userDoc = await admin.firestore().collection('users').doc(decodedToken.uid).get();
-    
+    const userDoc = await admin.firestore().collection('users').doc(user.uid).get();
+
     if (!userDoc.exists || userDoc.data().role !== 'admin') {
       return res.status(403).json({ error: 'Access denied. Admin only.' });
     }
-    
-    req.user = decodedToken;
-    next();
+
+    next(); // user is admin
   } catch (error) {
-    return res.status(401).json({ error: 'Invalid token' });
+    console.error('Admin check failed:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
 
