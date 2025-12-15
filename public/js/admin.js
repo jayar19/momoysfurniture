@@ -1,26 +1,56 @@
 // Load dashboard statistics
 async function loadDashboardStats() {
   console.log('Loading dashboard data...');
-
+  
   try {
-    // Fetch orders
-    const ordersRes = await authenticatedFetch(`${API_BASE_URL}/orders`);
-    if (!ordersRes.ok) throw new Error(`Orders fetch failed: ${ordersRes.status}`);
-    const orders = await ordersRes.json();
-    console.log('Orders fetched:', orders.length);
-
-    // Fetch products
-    const productsRes = await authenticatedFetch(`${API_BASE_URL}/products`);
-    if (!productsRes.ok) throw new Error(`Products fetch failed: ${productsRes.status}`);
+    const [productsRes, ordersRes] = await Promise.all([
+      authenticatedFetch(`${API_BASE_URL}/products`),
+      authenticatedFetch(`${API_BASE_URL}/orders`)
+    ]);
+    
+    console.log('Orders fetched:', ordersRes.status);
+    console.log('Products fetched:', productsRes.status);
+    
+    if (!productsRes.ok || !ordersRes.ok) {
+      throw new Error(`Failed to fetch data: Products ${productsRes.status}, Orders ${ordersRes.status}`);
+    }
+    
     const products = await productsRes.json();
+    const orders = await ordersRes.json();
+    
     console.log('Products fetched:', products.length);
-
-    // Example: update UI counts
-    document.getElementById('orders-count').textContent = Array.isArray(orders) ? orders.length : 0;
-    document.getElementById('products-count').textContent = Array.isArray(products) ? products.length : 0;
-
+    console.log('Orders fetched:', orders.length);
+    
+    const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+    const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'confirmed').length;
+    
+    // Safely update DOM elements with null checks
+    const totalProductsEl = document.getElementById('total-products');
+    const totalOrdersEl = document.getElementById('total-orders');
+    const totalRevenueEl = document.getElementById('total-revenue');
+    const pendingOrdersEl = document.getElementById('pending-orders');
+    
+    if (totalProductsEl) totalProductsEl.textContent = products.length;
+    if (totalOrdersEl) totalOrdersEl.textContent = orders.length;
+    if (totalRevenueEl) totalRevenueEl.textContent = `₱${totalRevenue.toLocaleString()}`;
+    if (pendingOrdersEl) pendingOrdersEl.textContent = pendingOrders;
+    
+    console.log('✅ Dashboard stats updated successfully');
   } catch (error) {
     console.error('Error loading stats:', error);
+    
+    // Show error message in dashboard
+    const statsContainer = document.querySelector('.admin-stats');
+    if (statsContainer) {
+      const errorDiv = document.createElement('div');
+      errorDiv.style.cssText = 'grid-column: 1/-1; background: #fee; padding: 1rem; border-radius: 5px; color: #e74c3c;';
+      errorDiv.innerHTML = `
+        <p><strong>⚠️ Failed to load statistics</strong></p>
+        <p style="font-size: 0.9rem; margin-top: 0.5rem;">${error.message}</p>
+        <button class="btn btn-primary" onclick="loadDashboardStats()" style="margin-top: 0.5rem; font-size: 0.9rem;">🔄 Retry</button>
+      `;
+      statsContainer.insertBefore(errorDiv, statsContainer.firstChild);
+    }
   }
 }
 
@@ -152,7 +182,7 @@ async function loadProductForEdit() {
   form.style.display = 'none';
   
   try {
-    const response = await authenticatedFetch(`${API_BASE_URL}/products/${productId}`);
+    const response = await fetch(`${API_BASE_URL}/products/${productId}`);
     
     if (!response.ok) {
       throw new Error('Product not found');
@@ -261,54 +291,75 @@ if (document.getElementById('edit-product-form')) {
 
 // Load orders for admin
 async function loadAdminOrders() {
-  const ordersTableBody = document.querySelector('#orders-table tbody');
-  ordersTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Loading orders...</td></tr>`;
-
+  const tbody = document.querySelector('#orders-table tbody');
+  
+  if (!tbody) return;
+  
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Loading orders...</td></tr>';
+  
   try {
+    // Wait a bit for auth to be ready
+    const user = auth.currentUser;
+    if (!user) {
+      console.log('No user logged in, waiting...');
+      await new Promise(resolve => {
+        const unsubscribe = auth.onAuthStateChanged(authUser => {
+          if (authUser) {
+            unsubscribe();
+            resolve();
+          }
+        });
+      });
+    }
+    
+    console.log('Loading admin orders...');
     const response = await authenticatedFetch(`${API_BASE_URL}/orders`);
     
     if (!response.ok) {
-      console.error('Failed to fetch orders:', response.status);
-      ordersTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Failed to load orders</td></tr>`;
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to load orders');
+    }
+    
+    const orders = await response.json();
+    console.log('Loaded orders:', orders.length);
+    
+    if (orders.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No orders found yet.</td></tr>';
       return;
     }
-
-    const data = await response.json();
-
-    if (!Array.isArray(data)) {
-      console.error('Orders response is not an array:', data);
-      ordersTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No orders available</td></tr>`;
-      return;
-    }
-
-    if (data.length === 0) {
-      ordersTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No orders found</td></tr>`;
-      return;
-    }
-
-    ordersTableBody.innerHTML = '';
-    data.forEach(order => {
-      const itemsText = order.items.map(i => `${i.name} x${i.quantity}`).join(', ');
-
-      ordersTableBody.innerHTML += `
+    
+    tbody.innerHTML = orders.map(order => {
+      const itemsList = order.items.map(item => `${item.productName} (x${item.quantity})`).join(', ');
+      const statusColor = getStatusColor(order.deliveryStatus);
+      const createdDate = new Date(order.createdAt).toLocaleDateString();
+      
+      return `
         <tr>
-          <td>${order.id}</td>
-          <td>${new Date(order.createdAt).toLocaleString()}</td>
-          <td>${itemsText}</td>
-          <td>$${order.total.toFixed(2)}</td>
-          <td>${order.status}</td>
-          <td>${order.paymentStatus}</td>
+          <td>#${order.id.substring(0, 8)}</td>
+          <td>${createdDate}</td>
+          <td style="font-size: 0.9rem;">${itemsList}</td>
+          <td>₱${order.totalAmount.toLocaleString()}</td>
+          <td><span style="background: ${statusColor}; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem;">${order.deliveryStatus}</span></td>
+          <td>${order.paymentStatus.replace('_', ' ')}</td>
           <td>
-            <button class="btn btn-primary" onclick="viewOrderDetails('${order.id}')">View</button>
-            <button class="btn btn-secondary" onclick="updateOrderStatus('${order.id}')">Update Status</button>
+            <button class="btn btn-secondary" onclick="viewOrderDetails('${order.id}')" style="margin-bottom: 0.5rem; font-size: 0.85rem;">View</button>
+            <button class="btn btn-primary" onclick="openUpdateStatusModal('${order.id}', '${order.deliveryStatus}')" style="margin-bottom: 0.5rem; font-size: 0.85rem;">Update Status</button>
+            <button class="btn btn-primary" onclick="openSetLocationModal('${order.id}')" style="font-size: 0.85rem;">Set Location</button>
           </td>
         </tr>
       `;
-    });
-
+    }).join('');
   } catch (error) {
     console.error('Error loading orders:', error);
-    ordersTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Error loading orders</td></tr>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 2rem;">
+          <p style="color: #e74c3c; margin-bottom: 1rem;">⚠️ Failed to load orders</p>
+          <p style="color: #7f8c8d; margin-bottom: 1rem;">${error.message}</p>
+          <button class="btn btn-primary" onclick="loadAdminOrders()">🔄 Try Again</button>
+        </td>
+      </tr>
+    `;
   }
 }
 
@@ -326,49 +377,45 @@ function getStatusColor(status) {
 
 // View order details
 async function viewOrderDetails(orderId) {
-  if (!orderId) {
-    alert('No order ID provided');
-    return;
-  }
-
-  const modalBody = document.getElementById('order-details-modal-body');
-  if (modalBody) modalBody.innerHTML = 'Loading order details...';
-
   try {
-    const response = await authenticatedFetch(`${API_BASE_URL}/orders/${orderId}`, { method: 'GET' });
-
+    const response = await authenticatedFetch(`${API_BASE_URL}/orders/${orderId}`);
+    
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Error loading order details:', errorData);
-      alert(`Failed to load order: ${errorData.error || response.status}`);
-      return;
+      throw new Error('Failed to load order');
     }
-
+    
     const order = await response.json();
-
-    console.log('Order details loaded:', order);
-
-    // Populate modal or page with order info
-    if (modalBody) {
-      modalBody.innerHTML = `
-        <p><strong>Order ID:</strong> ${order.id}</p>
-        <p><strong>Date:</strong> ${new Date(order.date).toLocaleString()}</p>
-        <p><strong>Customer:</strong> ${order.customerName || 'N/A'}</p>
-        <p><strong>Items:</strong></p>
-        <ul>
-          ${order.items.map(item => `<li>${item.name} x${item.quantity} - ₱${item.price.toFixed(2)}</li>`).join('')}
-        </ul>
-        <p><strong>Total:</strong> ₱${order.total.toFixed(2)}</p>
-        <p><strong>Delivery Status:</strong> ${order.deliveryStatus || 'Pending'}</p>
-        <p><strong>Payment Status:</strong> ${order.paymentStatus || 'Pending'}</p>
-      `;
-    }
-
-    // Optionally, show modal here
-    // Example: $('#orderDetailsModal').modal('show');
+    
+    const itemsList = order.items.map(item => 
+      `<li>${item.productName} - Qty: ${item.quantity} - ₱${(item.price * item.quantity).toLocaleString()}</li>`
+    ).join('');
+    
+    const details = `
+      <strong>Order ID:</strong> ${order.id}<br>
+      <strong>Created:</strong> ${new Date(order.createdAt).toLocaleString()}<br>
+      <strong>Customer ID:</strong> ${order.userId}<br><br>
+      
+      <strong>Items:</strong>
+      <ul style="margin: 0.5rem 0;">${itemsList}</ul><br>
+      
+      <strong>Total Amount:</strong> ₱${order.totalAmount.toLocaleString()}<br>
+      <strong>Down Payment:</strong> ₱${order.downPayment.toLocaleString()}<br>
+      <strong>Remaining Balance:</strong> ₱${order.remainingBalance.toLocaleString()}<br><br>
+      
+      <strong>Shipping Address:</strong><br>
+      ${order.shippingAddress}<br><br>
+      
+      <strong>Status:</strong> ${order.status}<br>
+      <strong>Payment Status:</strong> ${order.paymentStatus}<br>
+      <strong>Delivery Status:</strong> ${order.deliveryStatus}<br>
+      ${order.estimatedDelivery ? `<strong>Estimated Delivery:</strong> ${new Date(order.estimatedDelivery).toLocaleDateString()}<br>` : ''}
+      ${order.currentLocation ? `<strong>Current Location:</strong> ${order.currentLocation.lat}, ${order.currentLocation.lng}` : ''}
+    `;
+    
+    showModal('Order Details', details);
   } catch (error) {
-    console.error('Unexpected error loading order details:', error);
-    alert('Failed to load order. Check console for details.');
+    console.error('Error loading order details:', error);
+    alert('Failed to load order details');
   }
 }
 

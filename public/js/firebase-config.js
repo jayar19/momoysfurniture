@@ -1,4 +1,4 @@
-// Firebase configuration
+// Firebase configuration - Replace with your actual Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBpSImRjgBmMk4vDww2is3xQHPk7ChePao",
   authDomain: "momoys-furniture.firebaseapp.com",
@@ -9,31 +9,51 @@ const firebaseConfig = {
   measurementId: "G-XPZY184G3L"
 };
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
+// Initialize services
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Ensure auth persists across reloads
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-  .then(() => console.log('✅ Auth persistence set to LOCAL'))
-  .catch(err => console.error('❌ Failed to set auth persistence:', err));
+// API base URL - Make sure this is correct
+const API_BASE_URL = window.location.hostname.includes('localhost')
+  ? 'http://localhost:3000/api'
+  : '/api';
 
-// Get Firebase ID token
+console.log('API Base URL:', API_BASE_URL);
+
+// ------------------- Helper: Get Firebase ID Token -------------------
 async function getAuthToken() {
-  const user = auth.currentUser;
-  if (!user) return null;
-
-  try {
-    const token = await user.getIdToken(true); // force refresh
-    return token;
-  } catch (error) {
-    console.error('❌ Error fetching Firebase ID token:', error);
-    return null;
-  }
+  return new Promise((resolve) => {
+    const user = auth.currentUser;
+    if (user) {
+      user.getIdToken(true)
+        .then(token => resolve(token))
+        .catch(err => {
+          console.error('Error fetching token:', err);
+          resolve(null);
+        });
+    } else {
+      // Wait for auth state to be ready
+      const unsubscribe = auth.onAuthStateChanged(u => {
+        unsubscribe();
+        if (u) {
+          u.getIdToken(true)
+            .then(token => resolve(token))
+            .catch(err => {
+              console.error('Error fetching token:', err);
+              resolve(null);
+            });
+        } else {
+          resolve(null);
+        }
+      });
+    }
+  });
 }
 
-// Make authenticated fetch requests
+// ------------------- Helper: Authenticated Fetch -------------------
 async function authenticatedFetch(url, options = {}) {
   const token = await getAuthToken();
 
@@ -44,34 +64,42 @@ async function authenticatedFetch(url, options = {}) {
 
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  console.log('🌐 Making authenticated request to:', url);
-  console.log('🔑 Token being sent:', token ? token.substring(0, 20) + '...' : 'No token');
+  console.log('Making authenticated request to:', url);
+  console.log('Token exists:', !!token);
 
   try {
-    const response = await fetch(url, { ...options, headers });
+    const res = await fetch(url, { ...options, headers });
+    console.log('Response status:', res.status);
 
-    console.log('🔎 Response status:', response.status);
-
-    if (response.status === 401) {
-      console.warn('🚫 Unauthorized request. User may not be authenticated.');
-    } else if (response.status === 403) {
-      console.warn('⛔ Forbidden request. Access denied.');
+    // Optional: handle 401/403 globally
+    if (res.status === 401) {
+      console.warn('Unauthorized request. User may not be authenticated.');
+      // window.location.href = '/login.html'; // Commented out for debugging
+    } else if (res.status === 403) {
+      console.warn('Forbidden request. Admin access required.');
       alert('Access denied. Admin only.');
     }
 
-    return response;
-  } catch (error) {
-    console.error('❌ Fetch error:', error);
-    throw error;
+    return res;
+  } catch (err) {
+    console.error('Error in authenticatedFetch:', err);
+    throw err;
   }
 }
 
-// Listen to auth state changes
-auth.onAuthStateChanged(user => {
-  console.log('📩 Auth state changed:', user ? user.email : 'Not logged in');
+// ------------------- Auth State Listener -------------------
+auth.onAuthStateChanged(async (user) => {
+  console.log('Auth state changed:', user ? user.email : 'Not logged in');
+
+  if (user) {
+    const token = await getAuthToken();
+    console.log('Admin verified token:', token ? '✅ Token exists' : '❌ No token');
+  }
+
   updateUIForAuthState(user);
 });
 
+// ------------------- UI Updates -------------------
 function updateUIForAuthState(user) {
   const authLinks = document.querySelectorAll('.auth-required');
   const guestLinks = document.querySelectorAll('.guest-only');
@@ -84,5 +112,6 @@ function updateUIForAuthState(user) {
   } else {
     authLinks.forEach(link => link.style.display = 'none');
     guestLinks.forEach(link => link.style.display = 'block');
+    if (userEmail) userEmail.textContent = '';
   }
 }
