@@ -1,37 +1,28 @@
 // Load dashboard statistics
 async function loadDashboardStats() {
+  console.log('Loading dashboard data...');
+
   try {
-    const [productsRes, ordersRes] = await Promise.all([
-      authenticatedFetch(`${API_BASE_URL}/products`),
-      authenticatedFetch(`${API_BASE_URL}/orders`)
-    ]);
-
-    const products = await productsRes.json();
+    // Fetch orders
+    const ordersRes = await authenticatedFetch(`${API_BASE_URL}/orders`);
+    if (!ordersRes.ok) throw new Error(`Orders fetch failed: ${ordersRes.status}`);
     const orders = await ordersRes.json();
+    console.log('Orders fetched:', orders.length);
 
-    // Check if response is valid
-    if (!Array.isArray(products)) {
-      console.error('Products response is not an array:', products);
-      return;
-    }
-    if (!Array.isArray(orders)) {
-      console.error('Orders response is not an array:', orders);
-      return;
-    }
+    // Fetch products
+    const productsRes = await authenticatedFetch(`${API_BASE_URL}/products`);
+    if (!productsRes.ok) throw new Error(`Products fetch failed: ${productsRes.status}`);
+    const products = await productsRes.json();
+    console.log('Products fetched:', products.length);
 
-    const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
-    const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'confirmed').length;
-
-    document.getElementById('total-products').textContent = products.length;
-    document.getElementById('total-orders').textContent = orders.length;
-    document.getElementById('total-revenue').textContent = `₱${totalRevenue.toLocaleString()}`;
-    document.getElementById('pending-orders').textContent = pendingOrders;
+    // Example: update UI counts
+    document.getElementById('orders-count').textContent = Array.isArray(orders) ? orders.length : 0;
+    document.getElementById('products-count').textContent = Array.isArray(products) ? products.length : 0;
 
   } catch (error) {
     console.error('Error loading stats:', error);
   }
 }
-
 
 // Add product form
 if (document.getElementById('add-product-form')) {
@@ -270,37 +261,43 @@ if (document.getElementById('edit-product-form')) {
 
 // Load orders for admin
 async function loadAdminOrders() {
-  const tableBody = document.querySelector('#orders-table tbody');
-  tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Loading orders...</td></tr>`;
+  const ordersTableBody = document.querySelector('#orders-table tbody');
+  ordersTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Loading orders...</td></tr>`;
 
   try {
-    const response = await authenticatedFetch(`${API_BASE_URL}/orders`, { method: 'GET' });
-
+    const response = await authenticatedFetch(`${API_BASE_URL}/orders`);
+    
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Error loading orders:', errorData);
-      tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Failed to load orders: ${errorData.error || response.status}</td></tr>`;
+      console.error('Failed to fetch orders:', response.status);
+      ordersTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Failed to load orders</td></tr>`;
       return;
     }
 
-    const orders = await response.json();
+    const data = await response.json();
 
-    if (!Array.isArray(orders) || orders.length === 0) {
-      tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No orders found</td></tr>`;
+    if (!Array.isArray(data)) {
+      console.error('Orders response is not an array:', data);
+      ordersTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No orders available</td></tr>`;
       return;
     }
 
-    // Populate table
-    tableBody.innerHTML = '';
-    orders.forEach(order => {
-      tableBody.innerHTML += `
+    if (data.length === 0) {
+      ordersTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No orders found</td></tr>`;
+      return;
+    }
+
+    ordersTableBody.innerHTML = '';
+    data.forEach(order => {
+      const itemsText = order.items.map(i => `${i.name} x${i.quantity}`).join(', ');
+
+      ordersTableBody.innerHTML += `
         <tr>
           <td>${order.id}</td>
-          <td>${new Date(order.date).toLocaleString()}</td>
-          <td>${order.items.map(i => i.name).join(', ')}</td>
-          <td>₱${order.total.toFixed(2)}</td>
-          <td>${order.deliveryStatus || 'Pending'}</td>
-          <td>${order.paymentStatus || 'Pending'}</td>
+          <td>${new Date(order.createdAt).toLocaleString()}</td>
+          <td>${itemsText}</td>
+          <td>$${order.total.toFixed(2)}</td>
+          <td>${order.status}</td>
+          <td>${order.paymentStatus}</td>
           <td>
             <button class="btn btn-primary" onclick="viewOrderDetails('${order.id}')">View</button>
             <button class="btn btn-secondary" onclick="updateOrderStatus('${order.id}')">Update Status</button>
@@ -310,8 +307,8 @@ async function loadAdminOrders() {
     });
 
   } catch (error) {
-    console.error('Unexpected error loading orders:', error);
-    tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Error loading orders. Check console.</td></tr>`;
+    console.error('Error loading orders:', error);
+    ordersTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Error loading orders</td></tr>`;
   }
 }
 

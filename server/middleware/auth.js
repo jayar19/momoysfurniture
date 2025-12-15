@@ -1,43 +1,56 @@
 const admin = require('firebase-admin');
 
-// Middleware to verify Firebase ID token
+// Verify Firebase ID token middleware
 async function verifyToken(req, res, next) {
-  const authHeader = req.headers.authorization || '';
-  const idToken = authHeader.split('Bearer ')[1];
+  let idToken;
+  if (req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    if (authHeader.toLowerCase().startsWith('bearer ')) {
+      idToken = authHeader.split(' ')[1];
+    }
+  }
 
   if (!idToken) {
+    console.warn('🚫 No Firebase ID token provided');
     return res.status(401).json({ error: 'No token provided' });
   }
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
-    req.user = decodedToken; // attach user info to request
+    req.user = decodedToken;
     next();
   } catch (error) {
-    console.error('Token verification failed:', error);
+    console.error('❌ Token verification failed:', error);
     return res.status(401).json({ error: 'Invalid token' });
   }
 }
 
-// Middleware to allow only admins
+// Verify admin role middleware
 async function verifyAdmin(req, res, next) {
-  const user = req.user; // already verified by verifyToken
-
-  if (!user) {
-    return res.status(401).json({ error: 'User not authenticated' });
+  let idToken;
+  if (req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    if (authHeader.toLowerCase().startsWith('bearer ')) {
+      idToken = authHeader.split(' ')[1];
+    }
   }
 
+  if (!idToken) return res.status(401).json({ error: 'No token provided' });
+
   try {
-    const userDoc = await admin.firestore().collection('users').doc(user.uid).get();
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const userDoc = await admin.firestore().collection('users').doc(decodedToken.uid).get();
 
     if (!userDoc.exists || userDoc.data().role !== 'admin') {
+      console.warn('⛔ Access denied. User is not admin:', decodedToken.email);
       return res.status(403).json({ error: 'Access denied. Admin only.' });
     }
 
-    next(); // user is admin
+    req.user = decodedToken;
+    next();
   } catch (error) {
-    console.error('Admin check failed:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Admin verification failed:', error);
+    return res.status(401).json({ error: 'Invalid token' });
   }
 }
 
