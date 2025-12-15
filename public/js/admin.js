@@ -9,7 +9,11 @@ async function loadDashboardStats() {
     const products = await productsRes.json();
     const orders = await ordersRes.json();
     
-    const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+    const totalRevenue = orders.reduce(
+  (sum, order) => sum + Number(order.totalAmount || 0),
+  0
+);
+
     const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'confirmed').length;
     
     document.getElementById('total-products').textContent = products.length;
@@ -149,7 +153,7 @@ async function loadProductForEdit() {
   form.style.display = 'none';
   
   try {
-    const response = await fetch(`${API_BASE_URL}/products/${productId}`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/products/${productId}`);
     
     if (!response.ok) {
       throw new Error('Product not found');
@@ -372,7 +376,7 @@ async function viewOrderDetails(orderId) {
       <strong>Shipping Address:</strong><br>
       ${order.shippingAddress}<br><br>
       
-      <strong>Status:</strong> ${order.status}<br>
+      <strong>Status:</strong> ${order.deliveryStatus}<br>
       <strong>Payment Status:</strong> ${order.paymentStatus}<br>
       <strong>Delivery Status:</strong> ${order.deliveryStatus}<br>
       ${order.estimatedDelivery ? `<strong>Estimated Delivery:</strong> ${new Date(order.estimatedDelivery).toLocaleDateString()}<br>` : ''}
