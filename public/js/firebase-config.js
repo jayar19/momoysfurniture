@@ -1,4 +1,4 @@
-// Firebase configuration
+// Firebase configuration - Replace with your actual Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBpSImRjgBmMk4vDww2is3xQHPk7ChePao",
   authDomain: "momoys-furniture.firebaseapp.com",
@@ -12,27 +12,48 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Services
+// Initialize services
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// 🔑 READ from config.js
-const API_BASE_URL = window.API_BASE_URL;
+// API base URL - Make sure this is correct
+const API_BASE_URL = window.location.hostname.includes('localhost')
+  ? 'http://localhost:3000/api'
+  : '/api';
 
-// ------------------- Get Firebase ID Token -------------------
+console.log('API Base URL:', API_BASE_URL);
+
+// ------------------- Helper: Get Firebase ID Token -------------------
 async function getAuthToken() {
-  const user = auth.currentUser;
-  if (!user) return null;
-
-  try {
-    return await user.getIdToken(true); // force refresh
-  } catch (err) {
-    console.error('Error fetching token:', err);
-    return null;
-  }
+  return new Promise((resolve) => {
+    const user = auth.currentUser;
+    if (user) {
+      user.getIdToken(true)
+        .then(token => resolve(token))
+        .catch(err => {
+          console.error('Error fetching token:', err);
+          resolve(null);
+        });
+    } else {
+      // Wait for auth state to be ready
+      const unsubscribe = auth.onAuthStateChanged(u => {
+        unsubscribe();
+        if (u) {
+          u.getIdToken(true)
+            .then(token => resolve(token))
+            .catch(err => {
+              console.error('Error fetching token:', err);
+              resolve(null);
+            });
+        } else {
+          resolve(null);
+        }
+      });
+    }
+  });
 }
 
-// ------------------- Authenticated Fetch -------------------
+// ------------------- Helper: Authenticated Fetch -------------------
 async function authenticatedFetch(url, options = {}) {
   const token = await getAuthToken();
 
@@ -41,36 +62,56 @@ async function authenticatedFetch(url, options = {}) {
     ...(options.headers || {})
   };
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  console.log('Making authenticated request to:', url);
+  console.log('Token exists:', !!token);
+
+  try {
+    const res = await fetch(url, { ...options, headers });
+    console.log('Response status:', res.status);
+
+    // Optional: handle 401/403 globally
+    if (res.status === 401) {
+      console.warn('Unauthorized request. User may not be authenticated.');
+      // window.location.href = '/login.html'; // Commented out for debugging
+    } else if (res.status === 403) {
+      console.warn('Forbidden request. Admin access required.');
+      alert('Access denied. Admin only.');
+    }
+
+    return res;
+  } catch (err) {
+    console.error('Error in authenticatedFetch:', err);
+    throw err;
   }
-
-  console.log('➡️ Request:', url);
-  console.log('🔐 Token exists:', !!token);
-
-  const response = await fetch(url, {
-    ...options,
-    headers
-  });
-
-  console.log('⬅️ Response status:', response.status);
-  return response;
 }
 
-// ------------------- Auth Listener -------------------
-auth.onAuthStateChanged(user => {
+// ------------------- Auth State Listener -------------------
+auth.onAuthStateChanged(async (user) => {
   console.log('Auth state changed:', user ? user.email : 'Not logged in');
+
+  if (user) {
+    const token = await getAuthToken();
+    console.log('Admin verified token:', token ? '✅ Token exists' : '❌ No token');
+  }
+
   updateUIForAuthState(user);
 });
 
-// ------------------- UI -------------------
+// ------------------- UI Updates -------------------
 function updateUIForAuthState(user) {
-  document.querySelectorAll('.auth-required')
-    .forEach(el => el.style.display = user ? 'block' : 'none');
+  const authLinks = document.querySelectorAll('.auth-required');
+  const guestLinks = document.querySelectorAll('.guest-only');
+  const userEmail = document.getElementById('user-email');
 
-  document.querySelectorAll('.guest-only')
-    .forEach(el => el.style.display = user ? 'none' : 'block');
-
-  const email = document.getElementById('user-email');
-  if (email) email.textContent = user ? user.email : '';
+  if (user) {
+    authLinks.forEach(link => link.style.display = 'block');
+    guestLinks.forEach(link => link.style.display = 'none');
+    if (userEmail) userEmail.textContent = user.email;
+  } else {
+    authLinks.forEach(link => link.style.display = 'none');
+    guestLinks.forEach(link => link.style.display = 'block');
+    if (userEmail) userEmail.textContent = '';
+  }
 }
