@@ -62,7 +62,7 @@ if (category) {
         <div style="margin-top: 2rem; background: #f8f9fa; padding: 1.5rem; border-radius: 10px; max-width: 600px; margin: 2rem auto 0;">
           <h4 style="margin-bottom: 1rem;">Debug Information:</h4>
           <div style="text-align: left; font-family: monospace; font-size: 0.85rem;">
-            <p><strong>API URL:</strong> ${API_BASE_URL}/products</p>
+            <p><strong>API URL:</strong> /api/products</p>
             <p><strong>Error:</strong> ${error.message}</p>
             <p><strong>Error Type:</strong> ${error.name}</p>
           </div>
