@@ -1,15 +1,22 @@
 // ===================== CONFIG & UTILS =====================
 
-function authenticatedFetch(url, options = {}) {
-  const token = localStorage.getItem('authToken'); // or use Firebase token if using Firebase Auth
-  return fetch(`${API_BASE_URL}${url}`, {
+// admin.js or a separate utils.js
+async function authenticatedFetch(url, options = {}) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('User not authenticated');
+
+  const token = await user.getIdToken(); // Firebase ID token
+
+  const fetchOptions = {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
       ...(options.headers || {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` // <-- send token
     }
-  });
+  };
+
+  return fetch(url, fetchOptions);
 }
 
 // ===================== MODAL FUNCTIONS =====================
