@@ -2,8 +2,17 @@
 
 // admin.js or a separate utils.js
 async function authenticatedFetch(url, options = {}) {
-  const user = auth.currentUser;
-  if (!user) throw new Error('User not authenticated');
+  // Wait for user to be available
+  const user = await new Promise((resolve, reject) => {
+    const currentUser = auth.currentUser;
+    if (currentUser) return resolve(currentUser);
+
+    const unsubscribe = auth.onAuthStateChanged(u => {
+      unsubscribe();
+      if (u) resolve(u);
+      else reject(new Error('User not authenticated'));
+    });
+  });
 
   const token = await user.getIdToken(); // Firebase ID token
 
@@ -12,12 +21,13 @@ async function authenticatedFetch(url, options = {}) {
     headers: {
       ...(options.headers || {}),
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}` // <-- send token
+      'Authorization': `Bearer ${token}` // send token
     }
   };
 
   return fetch(url, fetchOptions);
 }
+
 
 // ===================== MODAL FUNCTIONS =====================
 function showModal(title, contentHtml) {

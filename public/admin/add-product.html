@@ -365,7 +365,7 @@
         
         console.log('Submitting product:', productData);
         
-        const response = await authenticatedFetch(`${API_BASE_URL}/products`, {
+        const response = await authenticatedFetch(`/products`, {
           method: 'POST',
           body: JSON.stringify(productData)
         });
