@@ -1,20 +1,23 @@
 // Load user orders
 async function loadUserOrders() {
   const user = auth.currentUser;
-  
+
   if (!user) {
     console.log('No user logged in');
     window.location.href = '/login.html';
     return;
   }
-  
+
   const container = document.getElementById('orders-container');
   container.innerHTML = '<div class="spinner"></div>';
-  
+
+  const url = `/api/orders/user/${user.uid}`;
+
   console.log('=== Loading Orders Debug ===');
   console.log('User ID:', user.uid);
   console.log('User Email:', user.email);
-  console.log('API URL:', `/api/orders/user/${user.uid}`);
+  console.log('API URL:', url);
+
   
   try {
     // Get token
