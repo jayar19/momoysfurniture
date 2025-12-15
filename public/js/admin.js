@@ -1,13 +1,63 @@
-// =========================
-// Admin.js - MOMOY'S Furniture
-// =========================
+// ===================== CONFIG & UTILS =====================
+const API_BASE_URL = 'https://momoysfurniture.onrender.com/api'; // make sure this matches your config
 
-// Load dashboard statistics
+function authenticatedFetch(url, options = {}) {
+  const token = localStorage.getItem('authToken'); // or use Firebase token if using Firebase Auth
+  return fetch(`${API_BASE_URL}${url}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    }
+  });
+}
+
+// ===================== MODAL FUNCTIONS =====================
+function showModal(title, contentHtml) {
+  closeModal(); // Remove existing modal
+
+  const modal = document.createElement('div');
+  modal.id = 'admin-modal';
+  modal.style.cssText = `
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index:1000;
+  `;
+
+  modal.innerHTML = `
+    <div style="background: #fff; padding:2rem; border-radius:10px; max-width:600px; width:90%; max-height:80vh; overflow-y:auto; position: relative;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+        <h2 style="margin:0;">${title}</h2>
+        <button id="close-modal-btn" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+      <div id="modal-content">${contentHtml}</div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeModal();
+  });
+  document.getElementById('close-modal-btn')?.addEventListener('click', closeModal);
+}
+
+function closeModal() {
+  document.getElementById('admin-modal')?.remove();
+}
+
+// ===================== DASHBOARD STATS =====================
 async function loadDashboardStats() {
   try {
     const [productsRes, ordersRes] = await Promise.all([
-      authenticatedFetch(`/products`),
-      authenticatedFetch(`/orders`)
+      authenticatedFetch('/products'),
+      authenticatedFetch('/orders')
     ]);
 
     if (!productsRes.ok || !ordersRes.ok) {
@@ -17,44 +67,172 @@ async function loadDashboardStats() {
     const products = await productsRes.json();
     const orders = await ordersRes.json();
 
-    const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
-    const pendingOrders = orders.filter(o => ['pending','confirmed'].includes(o.status)).length;
+    const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+    const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'confirmed').length;
 
-    document.getElementById('total-products')?.textContent = products.length;
-    document.getElementById('total-orders')?.textContent = orders.length;
-    document.getElementById('total-revenue')?.textContent = `₱${totalRevenue.toLocaleString()}`;
-    document.getElementById('pending-orders')?.textContent = pendingOrders;
+    document.getElementById('total-products') && (document.getElementById('total-products').textContent = products.length);
+    document.getElementById('total-orders') && (document.getElementById('total-orders').textContent = orders.length);
+    document.getElementById('total-revenue') && (document.getElementById('total-revenue').textContent = `₱${totalRevenue.toLocaleString()}`);
+    document.getElementById('pending-orders') && (document.getElementById('pending-orders').textContent = pendingOrders);
 
   } catch (error) {
-    console.error('Error loading stats:', error);
+    console.error('Error loading dashboard stats:', error);
     const statsContainer = document.querySelector('.admin-stats');
     if (statsContainer) {
-      statsContainer.innerHTML = `
-        <div style="grid-column:1/-1;background:#fee;padding:1rem;border-radius:5px;color:#e74c3c;">
-          <p><strong>⚠️ Failed to load statistics</strong></p>
-          <p style="font-size:0.9rem;margin-top:0.5rem;">${error.message}</p>
-          <button class="btn btn-primary" onclick="loadDashboardStats()" style="margin-top:0.5rem;font-size:0.9rem;">🔄 Retry</button>
-        </div>
+      const errorDiv = document.createElement('div');
+      errorDiv.style.cssText = 'grid-column:1/-1; background:#fee; padding:1rem; border-radius:5px; color:#e74c3c;';
+      errorDiv.innerHTML = `
+        <p><strong>⚠️ Failed to load statistics</strong></p>
+        <p style="font-size:0.9rem;">${error.message}</p>
+        <button class="btn btn-primary" onclick="loadDashboardStats()" style="margin-top:0.5rem; font-size:0.9rem;">🔄 Retry</button>
       `;
+      statsContainer.insertBefore(errorDiv, statsContainer.firstChild);
     }
   }
 }
 
-// =========================
-// Load admin orders
-// =========================
+// ===================== PRODUCT MANAGEMENT =====================
+async function loadAdminProducts() {
+  const tbody = document.querySelector('#products-table tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading products...</td></tr>';
+
+  try {
+    const res = await authenticatedFetch('/products');
+    const products = await res.json();
+    if (products.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No products found. <a href="/admin/add-product.html">Add a product</a></td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = products.map(p => `
+      <tr>
+        <td>${p.name}</td>
+        <td>${p.category}</td>
+        <td>₱${p.price.toLocaleString()}</td>
+        <td>${p.stock}</td>
+        <td>
+          <button class="btn btn-secondary" onclick="openEditProductModal('${p.id}')" style="margin-right:0.5rem;">Edit</button>
+          <button class="btn btn-danger" onclick="deleteProduct('${p.id}', '${p.name}')">Delete</button>
+        </td>
+      </tr>
+    `).join('');
+
+  } catch (error) {
+    console.error('Error loading products:', error);
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#e74c3c;">Failed to load products</td></tr>';
+  }
+}
+
+async function deleteProduct(productId, productName) {
+  if (!confirm(`Are you sure you want to delete "${productName}"?`)) return;
+
+  try {
+    const res = await authenticatedFetch(`/products/${productId}`, { method: 'DELETE' });
+    if (res.ok) {
+      alert('Product deleted successfully!');
+      loadAdminProducts();
+    } else {
+      const error = await res.json();
+      alert('Failed to delete product: ' + error.error);
+    }
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    alert('Failed to delete product');
+  }
+}
+
+// ===================== PRODUCT EDIT MODAL =====================
+async function openEditProductModal(productId) {
+  try {
+    const response = await authenticatedFetch(`/products/${productId}`);
+    if (!response.ok) throw new Error('Failed to load product data');
+
+    const product = await response.json();
+    const contentHtml = `
+      <form id="edit-product-modal-form">
+        <label>Name:</label><input type="text" id="edit-name" value="${product.name}" class="form-control" required>
+        <label>Description:</label><textarea id="edit-description" class="form-control" required>${product.description}</textarea>
+        <label>Price:</label><input type="number" id="edit-price" value="${product.price}" class="form-control" required>
+        <label>Category:</label><input type="text" id="edit-category" value="${product.category}" class="form-control" required>
+        <label>Image URL:</label><input type="text" id="edit-imageUrl" value="${product.imageUrl}" class="form-control">
+        <label>Stock:</label><input type="number" id="edit-stock" value="${product.stock}" class="form-control" required>
+        <button type="submit" class="btn btn-primary" style="margin-top:1rem;">Update Product</button>
+      </form>
+    `;
+
+    showModal('Edit Product', contentHtml);
+
+    document.getElementById('edit-product-modal-form')?.addEventListener('submit', async e => {
+      e.preventDefault();
+      await updateProductFromModal(productId);
+    });
+
+  } catch (error) {
+    console.error('Error opening edit modal:', error);
+    alert('Failed to open product edit modal');
+  }
+}
+
+async function updateProductFromModal(productId) {
+  const form = document.getElementById('edit-product-modal-form');
+  if (!form) return;
+
+  const btn = form.querySelector('button[type="submit"]');
+  const originalText = btn.textContent;
+  btn.textContent = 'Updating...';
+  btn.disabled = true;
+
+  const formData = {
+    name: document.getElementById('edit-name').value,
+    description: document.getElementById('edit-description').value,
+    price: parseFloat(document.getElementById('edit-price').value),
+    category: document.getElementById('edit-category').value,
+    imageUrl: document.getElementById('edit-imageUrl').value,
+    stock: parseInt(document.getElementById('edit-stock').value)
+  };
+
+  try {
+    const res = await authenticatedFetch(`/products/${productId}`, { method: 'PUT', body: JSON.stringify(formData) });
+    if (res.ok) {
+      alert('Product updated successfully!');
+      closeModal();
+      loadAdminProducts();
+    } else {
+      const error = await res.json();
+      alert('Failed to update product: ' + error.error);
+      btn.textContent = originalText; btn.disabled = false;
+    }
+  } catch (error) {
+    console.error('Error updating product:', error);
+    alert('Failed to update product');
+    btn.textContent = originalText; btn.disabled = false;
+  }
+}
+
+// ===================== ORDER MANAGEMENT =====================
+function getStatusColor(status) {
+  const colors = {
+    'processing': '#f39c12',
+    'confirmed': '#3498db',
+    'in_transit': '#9b59b6',
+    'delivered': '#27ae60',
+    'cancelled': '#e74c3c'
+  };
+  return colors[status] || '#95a5a6';
+}
+
 async function loadAdminOrders() {
   const tbody = document.querySelector('#orders-table tbody');
   if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Loading orders...</td></tr>`;
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Loading orders...</td></tr>';
 
   try {
-    const response = await authenticatedFetch(`/orders`);
-    if (!response.ok) throw new Error('Failed to load orders');
-    const orders = await response.json();
-
-    if (!orders.length) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No orders found.</td></tr>`;
+    const res = await authenticatedFetch('/orders');
+    if (!res.ok) throw new Error('Failed to load orders');
+    const orders = await res.json();
+    if (orders.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No orders found.</td></tr>';
       return;
     }
 
@@ -62,19 +240,18 @@ async function loadAdminOrders() {
       const itemsList = order.items.map(i => `${i.productName} (x${i.quantity})`).join(', ');
       const statusColor = getStatusColor(order.deliveryStatus);
       const createdDate = new Date(order.createdAt).toLocaleDateString();
-
       return `
         <tr>
-          <td>#${order.id.substring(0,8)}</td>
+          <td>#${order.id.substring(0, 8)}</td>
           <td>${createdDate}</td>
           <td style="font-size:0.9rem;">${itemsList}</td>
           <td>₱${order.totalAmount.toLocaleString()}</td>
-          <td><span style="background:${statusColor};padding:0.25rem 0.75rem;border-radius:12px;font-size:0.85rem;">${order.deliveryStatus}</span></td>
+          <td><span style="background:${statusColor}; padding:0.25rem 0.75rem; border-radius:12px; font-size:0.85rem;">${order.deliveryStatus}</span></td>
           <td>${order.paymentStatus.replace('_',' ')}</td>
           <td>
             <button class="btn btn-secondary" onclick="viewOrderDetails('${order.id}')" style="margin-bottom:0.5rem;font-size:0.85rem;">View</button>
             <button class="btn btn-primary" onclick="openUpdateStatusModal('${order.id}','${order.deliveryStatus}')" style="margin-bottom:0.5rem;font-size:0.85rem;">Update Status</button>
-            <button class="btn btn-primary" onclick="openSetLocationMap('${order.id}','${order.shippingAddress}')" style="font-size:0.85rem;">Set Location</button>
+            <button class="btn btn-primary" onclick="openSetLocationModal('${order.id}')" style="font-size:0.85rem;">Set Location</button>
           </td>
         </tr>
       `;
@@ -82,196 +259,109 @@ async function loadAdminOrders() {
 
   } catch (error) {
     console.error('Error loading orders:', error);
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="7" style="text-align:center;padding:2rem;color:#e74c3c;">
-          ⚠️ Failed to load orders<br>
-          <button class="btn btn-primary" onclick="loadAdminOrders()">🔄 Try Again</button>
-        </td>
-      </tr>
-    `;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#e74c3c;">⚠️ Failed to load orders<br>${error.message}</td></tr>`;
   }
 }
 
-// =========================
-// Get status color
-// =========================
-function getStatusColor(status) {
-  const colors = {
-    'processing':'#f39c12',
-    'confirmed':'#3498db',
-    'in_transit':'#9b59b6',
-    'delivered':'#27ae60',
-    'cancelled':'#e74c3c'
-  };
-  return colors[status] || '#95a5a6';
-}
-
-// =========================
-// View order details
-// =========================
+// ===================== VIEW ORDER DETAILS =====================
 async function viewOrderDetails(orderId) {
   try {
-    const response = await authenticatedFetch(`/orders/${orderId}`);
-    if (!response.ok) throw new Error('Failed to load order');
-    const order = await response.json();
+    const res = await authenticatedFetch(`/orders/${orderId}`);
+    if (!res.ok) throw new Error('Failed to load order');
+    const order = await res.json();
 
-    const itemsList = order.items.map(i => `<li>${i.productName} - Qty:${i.quantity} - ₱${(i.price*i.quantity).toLocaleString()}</li>`).join('');
-
-    showModal('Order Details', `
+    const itemsList = order.items.map(i => `<li>${i.productName} - Qty: ${i.quantity} - ₱${(i.price*i.quantity).toLocaleString()}</li>`).join('');
+    const contentHtml = `
       <strong>Order ID:</strong> ${order.id}<br>
       <strong>Created:</strong> ${new Date(order.createdAt).toLocaleString()}<br>
-      <strong>Shipping:</strong> ${order.shippingAddress}<br>
+      <strong>Customer ID:</strong> ${order.userId}<br><br>
+      <strong>Items:</strong><ul style="margin:0.5rem 0;">${itemsList}</ul>
+      <strong>Total Amount:</strong> ₱${order.totalAmount.toLocaleString()}<br>
+      <strong>Down Payment:</strong> ₱${order.downPayment.toLocaleString()}<br>
+      <strong>Remaining Balance:</strong> ₱${order.remainingBalance.toLocaleString()}<br>
+      <strong>Shipping Address:</strong><br>${order.shippingAddress}<br>
       <strong>Status:</strong> ${order.status}<br>
+      <strong>Payment Status:</strong> ${order.paymentStatus}<br>
       <strong>Delivery Status:</strong> ${order.deliveryStatus}<br>
-      <ul>${itemsList}</ul>
-      <strong>Total:</strong> ₱${order.totalAmount.toLocaleString()}
-      ${order.currentLocation ? `<br><strong>Current Location:</strong> ${order.currentLocation.lat}, ${order.currentLocation.lng}` : ''}
-    `);
+      ${order.estimatedDelivery ? `<strong>Estimated Delivery:</strong> ${new Date(order.estimatedDelivery).toLocaleDateString()}<br>` : ''}
+      ${order.currentLocation ? `<strong>Current Location:</strong> ${order.currentLocation.lat}, ${order.currentLocation.lng}` : ''}
+    `;
+    showModal('Order Details', contentHtml);
+
   } catch (error) {
-    console.error(error);
+    console.error('Error viewing order details:', error);
     alert('Failed to load order details');
   }
 }
 
-// =========================
-// Update order status modal
-// =========================
-function openUpdateStatusModal(orderId,currentStatus){
-  const content = `
-    <div class="form-group">
+// ===================== UPDATE STATUS =====================
+function openUpdateStatusModal(orderId, currentStatus) {
+  const contentHtml = `
+    <div>
       <label for="new-status">Select New Status:</label>
-      <select id="new-status" class="form-control">
+      <select id="new-status" class="form-control" style="width:100%;padding:0.75rem;border:1px solid #bdc3c7;border-radius:5px;">
         <option value="processing" ${currentStatus==='processing'?'selected':''}>Processing</option>
         <option value="confirmed" ${currentStatus==='confirmed'?'selected':''}>Confirmed</option>
         <option value="in_transit" ${currentStatus==='in_transit'?'selected':''}>In Transit</option>
         <option value="delivered" ${currentStatus==='delivered'?'selected':''}>Delivered</option>
         <option value="cancelled" ${currentStatus==='cancelled'?'selected':''}>Cancelled</option>
       </select>
+      <button class="btn btn-primary" style="width:100%;margin-top:1rem;" onclick="updateOrderStatus('${orderId}')">Update Status</button>
     </div>
-    <button class="btn btn-primary" onclick="updateOrderStatus('${orderId}')" style="width:100%;margin-top:1rem;">Update Status</button>
   `;
-  showModal('Update Order Status',content);
+  showModal('Update Order Status', contentHtml);
 }
 
-async function updateOrderStatus(orderId){
-  const newStatus = document.getElementById('new-status').value;
-  if(!newStatus) return alert('Please select a status');
+async function updateOrderStatus(orderId) {
+  const newStatus = document.getElementById('new-status')?.value;
+  if (!newStatus) return alert('Please select a status');
 
   try {
-    const res = await authenticatedFetch(`/orders/${orderId}`,{
-      method:'PUT',
-      body: JSON.stringify({status:newStatus,deliveryStatus:newStatus})
-    });
-    if(res.ok){
-      alert('Order status updated!');
-      closeModal();
-      loadAdminOrders();
-    }else{
-      const err = await res.json();
-      alert('Failed to update status: '+err.error);
+    const res = await authenticatedFetch(`/orders/${orderId}`, { method:'PUT', body:JSON.stringify({ status:newStatus, deliveryStatus:newStatus }) });
+    if (res.ok) {
+      alert('Order status updated successfully!');
+      closeModal(); loadAdminOrders();
+    } else {
+      const error = await res.json();
+      alert('Failed to update status: ' + error.error);
     }
-  } catch(e){
-    console.error(e);
-    alert('Failed to update status');
+  } catch (error) {
+    console.error('Error updating status:', error);
+    alert('Failed to update order status');
   }
 }
 
-// =========================
-// Set delivery location using Leaflet
-// =========================
-function openSetLocationMap(orderId,shippingAddress){
-  const content = `<div id="set-location-map" class="leaflet-container"></div>
-    <button class="btn btn-primary" onclick="saveMapLocation('${orderId}')" style="margin-top:1rem;width:100%;">Save Location</button>
+// ===================== SET DELIVERY LOCATION =====================
+function openSetLocationModal(orderId) {
+  const today = new Date().toISOString().split('T')[0];
+  const nextWeek = new Date(Date.now()+7*24*60*60*1000).toISOString().split('T')[0];
+
+  const contentHtml = `
+    <label>Latitude:</label><input type="number" id="modal-lat" step="0.000001" class="form-control" placeholder="10.3157" required>
+    <label>Longitude:</label><input type="number" id="modal-lng" step="0.000001" class="form-control" placeholder="123.8854" required>
+    <label>Estimated Delivery Date:</label><input type="date" id="modal-estimated-delivery" value="${nextWeek}" min="${today}" class="form-control" required>
+    <button class="btn btn-primary" style="margin-top:1rem;" id="set-location-btn">Set Location</button>
   `;
-  showModal('Set Delivery Location',content);
-
-  // Initialize Leaflet map
-  setTimeout(async () => {
-    const mapDiv = document.getElementById('set-location-map');
-    if(!mapDiv) return;
-
-    // Geocode shipping address via ORS or external geocoder
-    let destLatLng = [10.3157,123.8854]; // default Cebu
-    try {
-      const geoRes = await fetch(`https://api.openrouteservice.org/geocode/search?api_key=YOUR_ORS_API_KEY&text=${encodeURIComponent(shippingAddress)}`);
-      const geoData = await geoRes.json();
-      if(geoData.features?.length){
-        destLatLng = [geoData.features[0].geometry.coordinates[1],geoData.features[0].geometry.coordinates[0]];
-      }
-    } catch(e){
-      console.warn('Geocode failed',e);
-    }
-
-    const map = L.map(mapDiv).setView(destLatLng,12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
-
-    // Marker for current location
-    let currentMarker = L.marker(destLatLng,{draggable:true}).addTo(map);
-
-    // Click map to move marker
-    map.on('click',e=>{
-      currentMarker.setLatLng(e.latlng);
-    });
-
-    // Store map in div for later access
-    mapDiv._leafletMap = map;
-    mapDiv._marker = currentMarker;
-  },300);
+  showModal('Set Delivery Location', contentHtml);
+  document.getElementById('set-location-btn')?.addEventListener('click', () => setDeliveryLocation(orderId));
 }
 
-async function saveMapLocation(orderId){
-  const mapDiv = document.getElementById('set-location-map');
-  if(!mapDiv) return alert('Map not ready');
-
-  const latlng = mapDiv._marker.getLatLng();
-  if(!latlng) return alert('Please select a location');
+async function setDeliveryLocation(orderId) {
+  const lat = parseFloat(document.getElementById('modal-lat')?.value);
+  const lng = parseFloat(document.getElementById('modal-lng')?.value);
+  const est = document.getElementById('modal-estimated-delivery')?.value;
+  if (!lat || !lng || !est) return alert('Please fill in all fields');
 
   try {
-    const response = await authenticatedFetch(`/orders/${orderId}/location`,{
-      method:'PUT',
-      body: JSON.stringify({lat:latlng.lat,lng:latlng.lng})
-    });
-    if(response.ok){
-      alert('Delivery location saved!');
-      closeModal();
-      loadAdminOrders();
-    }else{
-      const err = await response.json();
-      alert('Failed to save location: '+err.error);
-    }
-  } catch(e){
-    console.error(e);
-    alert('Failed to save location');
+    const res = await authenticatedFetch(`/orders/${orderId}/location`, { method:'PUT', body:JSON.stringify({ lat,lng,estimatedDelivery:new Date(est).toISOString() }) });
+    if (res.ok) { alert('Delivery location updated!'); closeModal(); loadAdminOrders(); }
+    else { const error = await res.json(); alert('Failed to update location: ' + error.error); }
+  } catch (error) {
+    console.error('Error setting location:', error); alert('Failed to update delivery location');
   }
 }
 
-// =========================
-// Generic modal functions
-// =========================
-function showModal(title,content){
-  closeModal();
-  const modal=document.createElement('div');
-  modal.id='admin-modal';
-  modal.style=`position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;`;
-  modal.innerHTML=`
-    <div style="background:white;padding:2rem;border-radius:10px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
-        <h2 style="margin:0;">${title}</h2>
-        <button onclick="closeModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;">&times;</button>
-      </div>
-      <div>${content}</div>
-    </div>
-  `;
-  modal.addEventListener('click',e=>{if(e.target===modal) closeModal();});
-  document.body.appendChild(modal);
-}
-
-function closeModal(){document.getElementById('admin-modal')?.remove();}
-
-// =========================
-// Initialize on page
-// =========================
-document.getElementById('total-products') && loadDashboardStats();
-document.getElementById('products-table') && loadAdminProducts?.();
-document.getElementById('orders-table') && loadAdminOrders?.();
+// ===================== INITIAL LOAD =====================
+if (document.getElementById('total-products')) loadDashboardStats();
+if (document.getElementById('products-table')) loadAdminProducts();
+if (document.getElementById('orders-table')) loadAdminOrders();
