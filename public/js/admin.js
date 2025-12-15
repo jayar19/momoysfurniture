@@ -4,8 +4,8 @@ async function loadDashboardStats() {
   
   try {
     const [productsRes, ordersRes] = await Promise.all([
-      authenticatedFetch(`${API_BASE_URL}/products`),
-      authenticatedFetch(`${API_BASE_URL}/orders`)
+      authenticatedFetch(`/products`),
+      authenticatedFetch(`/orders`)
     ]);
     
     console.log('Orders fetched:', ordersRes.status);
@@ -74,7 +74,7 @@ if (document.getElementById('add-product-form')) {
     };
     
     try {
-      const response = await authenticatedFetch(`${API_BASE_URL}/products`, {
+      const response = await authenticatedFetch(`/products`, {
         method: 'POST',
         body: JSON.stringify(formData)
       });
@@ -106,7 +106,7 @@ async function loadAdminProducts() {
   tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Loading products...</td></tr>';
   
   try {
-    const response = await authenticatedFetch(`${API_BASE_URL}/products`);
+    const response = await authenticatedFetch(`/products`);
     const products = await response.json();
     
     if (products.length === 0) {
@@ -142,7 +142,7 @@ async function deleteProduct(productId, productName) {
   if (!confirm(`Are you sure you want to delete "${productName}"?`)) return;
   
   try {
-    const response = await authenticatedFetch(`${API_BASE_URL}/products/${productId}`, {
+    const response = await authenticatedFetch(`/products/${productId}`, {
       method: 'DELETE'
     });
     
@@ -249,7 +249,7 @@ if (document.getElementById('edit-product-form')) {
     };
     
     try {
-      const response = await authenticatedFetch(`${API_BASE_URL}/products/${productId}`, {
+      const response = await authenticatedFetch(`/products/${productId}`, {
         method: 'PUT',
         body: JSON.stringify(formData)
       });
@@ -313,7 +313,7 @@ async function loadAdminOrders() {
     }
     
     console.log('Loading admin orders...');
-    const response = await authenticatedFetch(`${API_BASE_URL}/orders`);
+    const response = await authenticatedFetch(`/orders`);
     
     if (!response.ok) {
       const error = await response.json();
@@ -378,7 +378,7 @@ function getStatusColor(status) {
 // View order details
 async function viewOrderDetails(orderId) {
   try {
-    const response = await authenticatedFetch(`${API_BASE_URL}/orders/${orderId}`);
+    const response = await authenticatedFetch(`/orders/${orderId}`);
     
     if (!response.ok) {
       throw new Error('Failed to load order');
@@ -448,7 +448,7 @@ async function updateOrderStatus(orderId) {
   }
   
   try {
-    const response = await authenticatedFetch(`${API_BASE_URL}/orders/${orderId}`, {
+    const response = await authenticatedFetch(`/orders/${orderId}`, {
       method: 'PUT',
       body: JSON.stringify({ 
         status: newStatus,
@@ -513,7 +513,7 @@ async function setDeliveryLocation(orderId) {
   }
   
   try {
-    const response = await authenticatedFetch(`${API_BASE_URL}/orders/${orderId}/location`, {
+    const response = await authenticatedFetch(`/orders/${orderId}/location`, {
       method: 'PUT',
       body: JSON.stringify({
         lat,
