@@ -1,5 +1,4 @@
-// Firebase configuration - Replace with your actual Firebase config from Firebase Console
-// Go to: Project Settings > General > Your apps > Web app > Config
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBpSImRjgBmMk4vDww2is3xQHPk7ChePao",
   authDomain: "momoys-furniture.firebaseapp.com",
@@ -10,9 +9,6 @@ const firebaseConfig = {
   measurementId: "G-XPZY184G3L"
 };
 
-// Verify config is correct
-console.log('Firebase initialized with project:', firebaseConfig.projectId);
-
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
@@ -20,14 +16,19 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// Helper function to get auth token
-// Get the current Firebase ID token
+// Ensure auth persistence is LOCAL so admin stays logged in
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+  .then(() => console.log("Auth persistence set to LOCAL"))
+  .catch(err => console.error("Failed to set auth persistence:", err));
+
+// -----------------------------
+// Helper function to get Firebase ID token
 async function getAuthToken() {
   const user = auth.currentUser;
   if (!user) return null;
 
   try {
-    // Force refresh to get a valid token
+    // Force refresh token to ensure validity
     const token = await user.getIdToken(true);
     return token;
   } catch (error) {
@@ -36,11 +37,11 @@ async function getAuthToken() {
   }
 }
 
-// Make authenticated fetch requests
+// -----------------------------
+// Authenticated fetch wrapper
 async function authenticatedFetch(url, options = {}) {
   const token = await getAuthToken();
 
-  // Merge headers
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {})
@@ -53,14 +54,12 @@ async function authenticatedFetch(url, options = {}) {
   console.log('Making authenticated request to:', url, 'Token exists:', !!token);
 
   try {
-    const response = await fetch(url, {
-      ...options,
-      headers
-    });
+    const response = await fetch(url, { ...options, headers });
 
-    // Optional: handle 401/403 globally
+    // Handle 401/403 globally
     if (response.status === 401) {
       console.warn('Unauthorized request. Redirecting to login...');
+      auth.signOut(); // Ensure Firebase state is cleared
       window.location.href = '/login.html';
     } else if (response.status === 403) {
       console.warn('Forbidden request. Access denied.');
@@ -74,18 +73,44 @@ async function authenticatedFetch(url, options = {}) {
   }
 }
 
-
-// Check auth state
-auth.onAuthStateChanged((user) => {
+// -----------------------------
+// Auth state change listener
+auth.onAuthStateChanged(async (user) => {
   console.log('Auth state changed:', user ? user.email : 'Not logged in');
-  updateUIForAuthState(user);
+
+  // Only proceed if user exists
+  if (user) {
+    // Check Firestore for admin role
+    try {
+      const userDoc = await db.collection('users').doc(user.uid).get();
+      if (!userDoc.exists || userDoc.data().role !== 'admin') {
+        alert('Access denied. Admin only.');
+        await auth.signOut();
+        window.location.href = '/login.html';
+        return;
+      }
+
+      console.log('Admin verified:', user.email);
+      updateUIForAuthState(user);
+
+    } catch (err) {
+      console.error('Error verifying admin role:', err);
+      await auth.signOut();
+      window.location.href = '/login.html';
+    }
+  } else {
+    // Not logged in
+    updateUIForAuthState(null);
+  }
 });
 
+// -----------------------------
+// Update UI based on auth state
 function updateUIForAuthState(user) {
   const authLinks = document.querySelectorAll('.auth-required');
   const guestLinks = document.querySelectorAll('.guest-only');
   const userEmail = document.getElementById('user-email');
-  
+
   if (user) {
     authLinks.forEach(link => link.style.display = 'block');
     guestLinks.forEach(link => link.style.display = 'none');
