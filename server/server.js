@@ -2,34 +2,66 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const admin = require('firebase-admin');
+const path = require('path');
 require('dotenv').config();
 
-// Initialize Firebase Admin
-admin.initializeApp({
-  credential: admin.credential.cert({
-    type: "service_account",
-    project_id: process.env.FIREBASE_PROJECT_ID,
-    private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
-    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    client_email: process.env.FIREBASE_CLIENT_EMAIL,
-    client_id: process.env.FIREBASE_CLIENT_ID,
-    auth_uri: "https://accounts.google.com/o/oauth2/auth",
-    token_uri: "https://oauth2.googleapis.com/token",
-    auth_provider_x509_cert_url:
-      "https://www.googleapis.com/oauth2/v1/certs",
-    client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL
-  }),
-  databaseURL: process.env.FIREBASE_DATABASE_URL
-});
+// Initialize Firebase Admin with environment variables or service account file
+let firebaseConfig;
+
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  // Production: Use environment variable (JSON string)
+  console.log('Using Firebase credentials from environment variable');
+  try {
+    firebaseConfig = {
+      credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
+      databaseURL: process.env.FIREBASE_DATABASE_URL
+    };
+  } catch (error) {
+    console.error('Error parsing FIREBASE_SERVICE_ACCOUNT:', error);
+    process.exit(1);
+  }
+} else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+  // Production: Use individual environment variables
+  console.log('Using Firebase credentials from individual environment variables');
+  firebaseConfig = {
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL
+    }),
+    databaseURL: process.env.FIREBASE_DATABASE_URL
+  };
+} else {
+  // Development: Use service account file
+  console.log('Using Firebase credentials from serviceAccountKey.json');
+  try {
+    const serviceAccount = require('../serviceAccountKey.json');
+    firebaseConfig = {
+      credential: admin.credential.cert(serviceAccount),
+      databaseURL: process.env.FIREBASE_DATABASE_URL
+    };
+  } catch (error) {
+    console.error('Error loading serviceAccountKey.json:', error);
+    console.error('Make sure to set environment variables for production or provide serviceAccountKey.json for development');
+    process.exit(1);
+  }
+}
+
+admin.initializeApp(firebaseConfig);
 
 const db = admin.firestore();
 const app = express();
 
-// Middleware - CORS must come first
+// Generate unique session ID when server starts
+const SERVER_SESSION_ID = Date.now().toString();
+console.log('Server Session ID:', SERVER_SESSION_ID);
+
+// Middleware - CORS configuration (allow same origin)
 app.use(cors({
-  origin: '*', // Allow all origins for development
+  origin: true, // Allow requests from same origin
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 
 // Request logging middleware
@@ -39,9 +71,8 @@ app.use((req, res, next) => {
 });
 
 app.use(bodyParser.json());
-app.use(express.static('public'));
 
-// Routes
+// API Routes (must come before static files)
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 const paymentRoutes = require('./routes/payments');
@@ -50,18 +81,25 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 
-// Health check
+// API Health check with session ID
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Server is running' });
+  res.json({ 
+    status: 'OK', 
+    message: 'Server is running',
+    sessionId: SERVER_SESSION_ID,
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
-// Test endpoint to check database connection
+// API Test endpoint to check database connection
 app.get('/api/test', async (req, res) => {
   try {
     const snapshot = await db.collection('products').limit(1).get();
     res.json({ 
       status: 'Database connected', 
-      productsCount: snapshot.size 
+      productsCount: snapshot.size,
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
     res.status(500).json({ 
@@ -69,6 +107,24 @@ app.get('/api/test', async (req, res) => {
       error: error.message 
     });
   }
+});
+
+// Serve static files from public directory (AFTER API routes)
+// This serves your HTML, CSS, JS files from GitHub
+app.use(express.static('public'));
+
+// Serve admin files
+app.use('/admin', express.static(path.join(__dirname, '../public/admin')));
+
+// Fallback for SPA routing - serve index.html for any non-API routes
+app.get('*', (req, res, next) => {
+  // Skip API routes
+  if (req.url.startsWith('/api')) {
+    return next();
+  }
+  
+  // Serve index.html for all other routes
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 // Error handling middleware
@@ -79,10 +135,11 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
-  console.log(`📦 API available at http://localhost:${PORT}/api`);
-  console.log(`🏠 Website at http://localhost:${PORT}`);
-  console.log(`📋 Orders endpoint: http://localhost:${PORT}/api/orders`);
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`📦 API available at /api`);
+  console.log(`🏠 Static files served from /public`);
+  console.log(`🔐 Session ID: ${SERVER_SESSION_ID}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
 // Don't export db - routes will get it from admin.firestore()
