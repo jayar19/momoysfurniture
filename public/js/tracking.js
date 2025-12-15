@@ -23,7 +23,7 @@ async function loadOrderTracking() {
   }
   
   try {
-    const response = await authenticatedFetch(`${API_BASE_URL}/orders/${orderId}`);
+    const response = await authenticatedFetch(`/orders/${orderId}`);
     const order = await response.json();
     
     if (!response.ok) {
