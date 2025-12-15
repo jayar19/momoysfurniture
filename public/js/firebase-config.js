@@ -51,10 +51,6 @@ async function getAuthToken() {
 
 // ------------------- Helper: Authenticated Fetch -------------------
 async function authenticatedFetch(endpoint, options = {}) {
-  if (!window.API_BASE_URL) {
-    throw new Error('API_BASE_URL missing. config.js not loaded.');
-  }
-
   const token = await getAuthToken();
 
   const headers = {
@@ -62,9 +58,7 @@ async function authenticatedFetch(endpoint, options = {}) {
     ...(options.headers || {})
   };
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   const fullUrl = window.API_BASE_URL + endpoint;
 
