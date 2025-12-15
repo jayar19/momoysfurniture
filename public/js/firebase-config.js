@@ -17,11 +17,7 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 // API base URL - Make sure this is correct
-if (!window.API_BASE_URL) {
-  console.error('❌ API_BASE_URL is missing. config.js not loaded.');
-}
 
-const API_BASE_URL = window.API_BASE_URL;
 
 // ------------------- Helper: Get Firebase ID Token -------------------
 async function getAuthToken() {
@@ -54,7 +50,11 @@ async function getAuthToken() {
 }
 
 // ------------------- Helper: Authenticated Fetch -------------------
-async function authenticatedFetch(url, options = {}) {
+async function authenticatedFetch(endpoint, options = {}) {
+  if (!window.API_BASE_URL) {
+    throw new Error('API_BASE_URL missing. config.js not loaded.');
+  }
+
   const token = await getAuthToken();
 
   const headers = {
@@ -62,29 +62,18 @@ async function authenticatedFetch(url, options = {}) {
     ...(options.headers || {})
   };
 
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-
-  console.log('Making authenticated request to:', url);
-  console.log('Token exists:', !!token);
-
-  try {
-    const res = await fetch(url, { ...options, headers });
-    console.log('Response status:', res.status);
-
-    // Optional: handle 401/403 globally
-    if (res.status === 401) {
-      console.warn('Unauthorized request. User may not be authenticated.');
-      // window.location.href = '/login.html'; // Commented out for debugging
-    } else if (res.status === 403) {
-      console.warn('Forbidden request. Admin access required.');
-      alert('Access denied. Admin only.');
-    }
-
-    return res;
-  } catch (err) {
-    console.error('Error in authenticatedFetch:', err);
-    throw err;
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
+
+  const fullUrl = window.API_BASE_URL + endpoint;
+
+  console.log('➡️ Auth fetch:', fullUrl);
+
+  return fetch(fullUrl, {
+    ...options,
+    headers
+  });
 }
 
 // ------------------- Auth State Listener -------------------
