@@ -270,75 +270,48 @@ if (document.getElementById('edit-product-form')) {
 
 // Load orders for admin
 async function loadAdminOrders() {
-  const tbody = document.querySelector('#orders-table tbody');
-  
-  if (!tbody) return;
-  
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Loading orders...</td></tr>';
-  
+  const tableBody = document.querySelector('#orders-table tbody');
+  tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Loading orders...</td></tr>`;
+
   try {
-    // Wait a bit for auth to be ready
-    const user = auth.currentUser;
-    if (!user) {
-      console.log('No user logged in, waiting...');
-      await new Promise(resolve => {
-        const unsubscribe = auth.onAuthStateChanged(authUser => {
-          if (authUser) {
-            unsubscribe();
-            resolve();
-          }
-        });
-      });
-    }
-    
-    console.log('Loading admin orders...');
-    const response = await authenticatedFetch(`${API_BASE_URL}/orders`);
-    
+    const response = await authenticatedFetch(`${API_BASE_URL}/orders`, { method: 'GET' });
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to load orders');
-    }
-    
-    const orders = await response.json();
-    console.log('Loaded orders:', orders.length);
-    
-    if (orders.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No orders found yet.</td></tr>';
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Error loading orders:', errorData);
+      tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Failed to load orders: ${errorData.error || response.status}</td></tr>`;
       return;
     }
-    
-    tbody.innerHTML = orders.map(order => {
-      const itemsList = order.items.map(item => `${item.productName} (x${item.quantity})`).join(', ');
-      const statusColor = getStatusColor(order.deliveryStatus);
-      const createdDate = new Date(order.createdAt).toLocaleDateString();
-      
-      return `
+
+    const orders = await response.json();
+
+    if (!Array.isArray(orders) || orders.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No orders found</td></tr>`;
+      return;
+    }
+
+    // Populate table
+    tableBody.innerHTML = '';
+    orders.forEach(order => {
+      tableBody.innerHTML += `
         <tr>
-          <td>#${order.id.substring(0, 8)}</td>
-          <td>${createdDate}</td>
-          <td style="font-size: 0.9rem;">${itemsList}</td>
-          <td>₱${order.totalAmount.toLocaleString()}</td>
-          <td><span style="background: ${statusColor}; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem;">${order.deliveryStatus}</span></td>
-          <td>${order.paymentStatus.replace('_', ' ')}</td>
+          <td>${order.id}</td>
+          <td>${new Date(order.date).toLocaleString()}</td>
+          <td>${order.items.map(i => i.name).join(', ')}</td>
+          <td>₱${order.total.toFixed(2)}</td>
+          <td>${order.deliveryStatus || 'Pending'}</td>
+          <td>${order.paymentStatus || 'Pending'}</td>
           <td>
-            <button class="btn btn-secondary" onclick="viewOrderDetails('${order.id}')" style="margin-bottom: 0.5rem; font-size: 0.85rem;">View</button>
-            <button class="btn btn-primary" onclick="openUpdateStatusModal('${order.id}', '${order.deliveryStatus}')" style="margin-bottom: 0.5rem; font-size: 0.85rem;">Update Status</button>
-            <button class="btn btn-primary" onclick="openSetLocationModal('${order.id}')" style="font-size: 0.85rem;">Set Location</button>
+            <button class="btn btn-primary" onclick="viewOrderDetails('${order.id}')">View</button>
+            <button class="btn btn-secondary" onclick="updateOrderStatus('${order.id}')">Update Status</button>
           </td>
         </tr>
       `;
-    }).join('');
+    });
+
   } catch (error) {
-    console.error('Error loading orders:', error);
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="7" style="text-align: center; padding: 2rem;">
-          <p style="color: #e74c3c; margin-bottom: 1rem;">⚠️ Failed to load orders</p>
-          <p style="color: #7f8c8d; margin-bottom: 1rem;">${error.message}</p>
-          <button class="btn btn-primary" onclick="loadAdminOrders()">🔄 Try Again</button>
-        </td>
-      </tr>
-    `;
+    console.error('Unexpected error loading orders:', error);
+    tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Error loading orders. Check console.</td></tr>`;
   }
 }
 
@@ -356,45 +329,49 @@ function getStatusColor(status) {
 
 // View order details
 async function viewOrderDetails(orderId) {
+  if (!orderId) {
+    alert('No order ID provided');
+    return;
+  }
+
+  const modalBody = document.getElementById('order-details-modal-body');
+  if (modalBody) modalBody.innerHTML = 'Loading order details...';
+
   try {
-    const response = await authenticatedFetch(`${API_BASE_URL}/orders/${orderId}`);
-    
+    const response = await authenticatedFetch(`${API_BASE_URL}/orders/${orderId}`, { method: 'GET' });
+
     if (!response.ok) {
-      throw new Error('Failed to load order');
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Error loading order details:', errorData);
+      alert(`Failed to load order: ${errorData.error || response.status}`);
+      return;
     }
-    
+
     const order = await response.json();
-    
-    const itemsList = order.items.map(item => 
-      `<li>${item.productName} - Qty: ${item.quantity} - ₱${(item.price * item.quantity).toLocaleString()}</li>`
-    ).join('');
-    
-    const details = `
-      <strong>Order ID:</strong> ${order.id}<br>
-      <strong>Created:</strong> ${new Date(order.createdAt).toLocaleString()}<br>
-      <strong>Customer ID:</strong> ${order.userId}<br><br>
-      
-      <strong>Items:</strong>
-      <ul style="margin: 0.5rem 0;">${itemsList}</ul><br>
-      
-      <strong>Total Amount:</strong> ₱${order.totalAmount.toLocaleString()}<br>
-      <strong>Down Payment:</strong> ₱${order.downPayment.toLocaleString()}<br>
-      <strong>Remaining Balance:</strong> ₱${order.remainingBalance.toLocaleString()}<br><br>
-      
-      <strong>Shipping Address:</strong><br>
-      ${order.shippingAddress}<br><br>
-      
-      <strong>Status:</strong> ${order.deliveryStatus}<br>
-      <strong>Payment Status:</strong> ${order.paymentStatus}<br>
-      <strong>Delivery Status:</strong> ${order.deliveryStatus}<br>
-      ${order.estimatedDelivery ? `<strong>Estimated Delivery:</strong> ${new Date(order.estimatedDelivery).toLocaleDateString()}<br>` : ''}
-      ${order.currentLocation ? `<strong>Current Location:</strong> ${order.currentLocation.lat}, ${order.currentLocation.lng}` : ''}
-    `;
-    
-    showModal('Order Details', details);
+
+    console.log('Order details loaded:', order);
+
+    // Populate modal or page with order info
+    if (modalBody) {
+      modalBody.innerHTML = `
+        <p><strong>Order ID:</strong> ${order.id}</p>
+        <p><strong>Date:</strong> ${new Date(order.date).toLocaleString()}</p>
+        <p><strong>Customer:</strong> ${order.customerName || 'N/A'}</p>
+        <p><strong>Items:</strong></p>
+        <ul>
+          ${order.items.map(item => `<li>${item.name} x${item.quantity} - ₱${item.price.toFixed(2)}</li>`).join('')}
+        </ul>
+        <p><strong>Total:</strong> ₱${order.total.toFixed(2)}</p>
+        <p><strong>Delivery Status:</strong> ${order.deliveryStatus || 'Pending'}</p>
+        <p><strong>Payment Status:</strong> ${order.paymentStatus || 'Pending'}</p>
+      `;
+    }
+
+    // Optionally, show modal here
+    // Example: $('#orderDetailsModal').modal('show');
   } catch (error) {
-    console.error('Error loading order details:', error);
-    alert('Failed to load order details');
+    console.error('Unexpected error loading order details:', error);
+    alert('Failed to load order. Check console for details.');
   }
 }
 
