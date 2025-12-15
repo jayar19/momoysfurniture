@@ -1,46 +1,32 @@
 // ===================== CONFIG & UTILS =====================
 
+// admin.js
+import { auth } from './firebase-config.js';
+import { API_BASE_URL } from './config.js';
+
+// Helper function to fetch with Firebase auth
 async function authenticatedFetch(url, options = {}) {
-  // Wait for Firebase user
-  const user = await new Promise((resolve, reject) => {
-    const currentUser = auth.currentUser;
-    if (currentUser) return resolve(currentUser);
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not authenticated");
 
-    const unsubscribe = auth.onAuthStateChanged(u => {
-      unsubscribe();
-      if (u) resolve(u);
-      else reject(new Error('User not authenticated'));
+    const token = await user.getIdToken();
+    const res = await fetch(url, {
+        ...options,
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+            ...(options.headers || {})
+        }
     });
-  });
 
-  // Get Firebase ID token
-  const token = await user.getIdToken();
+    const text = await res.text();
 
-  // Merge headers
-  const fetchOptions = {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      ...(options.headers || {})
+    try {
+        return JSON.parse(text);
+    } catch {
+        console.error("Response is not valid JSON:", text);
+        throw new Error("Invalid JSON response");
     }
-  };
-
-  const response = await fetch(url, fetchOptions);
-
-  // Check for non-JSON responses
-  const text = await response.text();
-  if (!response.ok) {
-    console.error('API error response:', text);
-    throw new Error(`${response.status} ${response.statusText}`);
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    console.error('Response is not valid JSON:', text);
-    throw new Error('Invalid JSON response');
-  }
 }
 
 // ===================== MODAL FUNCTIONS =====================
@@ -83,76 +69,65 @@ function closeModal() {
 }
 
 // ===================== DASHBOARD STATS =====================
-async function loadDashboardStats() {
-  try {
-    const [productsRes, ordersRes] = await Promise.all([
-      authenticatedFetch('/products'),
-      authenticatedFetch('/orders')
-    ]);
+// Load dashboard stats
+export async function loadDashboardStats() {
+    try {
+        const [productsData, ordersData] = await Promise.all([
+            authenticatedFetch(`${API_BASE_URL}/products`),
+            authenticatedFetch(`${API_BASE_URL}/orders`)
+        ]);
 
-    if (!productsRes.ok || !ordersRes.ok) {
-      throw new Error(`Failed to fetch data: Products ${productsRes.status}, Orders ${ordersRes.status}`);
+        console.log("Dashboard Stats:", { productsData, ordersData });
+
+        // TODO: Render stats in your dashboard UI
+        document.getElementById('products-count').textContent = productsData.length;
+        document.getElementById('orders-count').textContent = ordersData.length;
+
+    } catch (err) {
+        console.error("Error loading dashboard stats:", err);
+        // Show error to admin
+        document.getElementById('dashboard-error').textContent = err.message;
     }
-
-    const products = await productsRes.json();
-    const orders = await ordersRes.json();
-
-    const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
-    const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'confirmed').length;
-
-    document.getElementById('total-products') && (document.getElementById('total-products').textContent = products.length);
-    document.getElementById('total-orders') && (document.getElementById('total-orders').textContent = orders.length);
-    document.getElementById('total-revenue') && (document.getElementById('total-revenue').textContent = `₱${totalRevenue.toLocaleString()}`);
-    document.getElementById('pending-orders') && (document.getElementById('pending-orders').textContent = pendingOrders);
-
-  } catch (error) {
-    console.error('Error loading dashboard stats:', error);
-    const statsContainer = document.querySelector('.admin-stats');
-    if (statsContainer) {
-      const errorDiv = document.createElement('div');
-      errorDiv.style.cssText = 'grid-column:1/-1; background:#fee; padding:1rem; border-radius:5px; color:#e74c3c;';
-      errorDiv.innerHTML = `
-        <p><strong>⚠️ Failed to load statistics</strong></p>
-        <p style="font-size:0.9rem;">${error.message}</p>
-        <button class="btn btn-primary" onclick="loadDashboardStats()" style="margin-top:0.5rem; font-size:0.9rem;">🔄 Retry</button>
-      `;
-      statsContainer.insertBefore(errorDiv, statsContainer.firstChild);
-    }
-  }
 }
 
 // ===================== PRODUCT MANAGEMENT =====================
-async function loadAdminProducts() {
-  const tbody = document.querySelector('#products-table tbody');
-  if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading products...</td></tr>';
+// Load admin products
+export async function loadAdminProducts() {
+    try {
+        const products = await authenticatedFetch(`${API_BASE_URL}/products`);
 
-  try {
-    const res = await authenticatedFetch('/products');
-    const products = await res.json();
-    if (products.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No products found. <a href="/admin/add-product.html">Add a product</a></td></tr>';
-      return;
+        console.log("Admin Products:", products);
+
+        // TODO: Render products in your dashboard
+        const container = document.getElementById('products-container');
+        container.innerHTML = ''; // Clear previous
+        products.forEach(product => {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            card.innerHTML = `
+                <img src="${product.image}" alt="${product.name}">
+                <div class="overlay"><h3>${product.name}</h3></div>
+            `;
+            container.appendChild(card);
+        });
+
+    } catch (err) {
+        console.error("Error loading products:", err);
+        document.getElementById('products-error').textContent = err.message;
     }
-
-    tbody.innerHTML = products.map(p => `
-      <tr>
-        <td>${p.name}</td>
-        <td>${p.category}</td>
-        <td>₱${p.price.toLocaleString()}</td>
-        <td>${p.stock}</td>
-        <td>
-          <button class="btn btn-secondary" onclick="openEditProductModal('${p.id}')" style="margin-right:0.5rem;">Edit</button>
-          <button class="btn btn-danger" onclick="deleteProduct('${p.id}', '${p.name}')">Delete</button>
-        </td>
-      </tr>
-    `).join('');
-
-  } catch (error) {
-    console.error('Error loading products:', error);
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#e74c3c;">Failed to load products</td></tr>';
-  }
 }
+
+// Listen to Firebase auth state
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        console.log("Admin verified token: ✅ Token exists");
+        await loadDashboardStats();
+        await loadAdminProducts();
+    } else {
+        console.warn("User not signed in. Redirecting to login...");
+        window.location.href = '/admin/login.html';
+    }
+});
 
 async function deleteProduct(productId, productName) {
   if (!confirm(`Are you sure you want to delete "${productName}"?`)) return;
