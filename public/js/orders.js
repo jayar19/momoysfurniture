@@ -14,14 +14,14 @@ async function loadUserOrders() {
   console.log('=== Loading Orders Debug ===');
   console.log('User ID:', user.uid);
   console.log('User Email:', user.email);
-  console.log('API URL:', `${API_BASE_URL}/orders/user/${user.uid}`);
+  console.log('API URL:', `/api/orders/user/${user.uid}`);
   
   try {
     // Get token
     const token = await user.getIdToken();
     console.log('Token obtained:', token ? 'Yes' : 'No');
     
-    const url = `${API_BASE_URL}/orders/user/${user.uid}`;
+    console.log('API URL:', `/api/orders/user/${user.uid}`);
     console.log('Fetching from:', url);
     
     const response = await fetch(url, {
@@ -74,7 +74,7 @@ async function loadUserOrders() {
           <h4 style="margin-bottom: 1rem;">Debug Info:</h4>
           <ul style="line-height: 2; font-family: monospace; font-size: 0.9rem;">
             <li>User ID: ${user.uid}</li>
-            <li>API URL: ${API_BASE_URL}/orders/user/${user.uid}</li>
+            <li>API URL: /api/orders/user/${user.uid}</li>
             <li>Error: ${error.message}</li>
           </ul>
         </div>
@@ -251,7 +251,7 @@ async function payRemainingBalance(orderId, amount) {
   if (!confirmation) return;
   
   try {
-    const response = await authenticatedFetch(`${API_BASE_URL}/payments/remaining-balance`, {
+    const response = await authenticatedFetch(`/api/payments/remaining-balance`, {
       method: 'POST',
       body: JSON.stringify({
         orderId,
