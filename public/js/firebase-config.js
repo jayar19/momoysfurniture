@@ -57,11 +57,13 @@ async function authenticatedFetch(url, options = {}) {
     const response = await fetch(url, { ...options, headers });
 
     // Handle 401/403 globally
+    /*
     if (response.status === 401) {
       console.warn('Unauthorized request. Redirecting to login...');
       auth.signOut(); // Ensure Firebase state is cleared
       window.location.href = '/login.html';
-    } else if (response.status === 403) {
+    } */
+    if (response.status === 403) {
       console.warn('Forbidden request. Access denied.');
       alert('Access denied. Admin only.');
     }
