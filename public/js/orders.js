@@ -288,10 +288,16 @@ function showMessage(message, type) {
   }, 3000);
 }
 
-// Initialize
+// Initialize - wait for backend and auth
 if (document.getElementById('orders-container')) {
-  auth.onAuthStateChanged((user) => {
+  auth.onAuthStateChanged(async (user) => {
     if (user) {
+      // Wait for backend to be ready
+      if (typeof waitForBackend === 'function') {
+        console.log('Waiting for backend before loading orders...');
+        await waitForBackend();
+      }
+      console.log('Loading orders...');
       loadUserOrders();
     } else {
       window.location.href = '/login.html';

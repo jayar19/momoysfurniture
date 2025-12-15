@@ -3,6 +3,9 @@ async function loadProducts(category = null) {
   const container = document.getElementById('products-container');
   if (!container) return;
   
+  // Show loading state
+  container.innerHTML = '<div class="spinner"></div>';
+  
   try {
     let url = `${API_BASE_URL}/products`;
     if (category) {
@@ -10,10 +13,23 @@ async function loadProducts(category = null) {
     }
     
     console.log('Fetching products from:', url);
-    const response = await fetch(url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      // Add timeout
+      signal: AbortSignal.timeout(30000) // 30 second timeout
+    });
+    
+    console.log('Response status:', response.status);
+    console.log('Response ok:', response.ok);
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
     
     const products = await response.json();
@@ -22,11 +38,36 @@ async function loadProducts(category = null) {
     displayProducts(products);
   } catch (error) {
     console.error('Error loading products:', error);
+    
+    let errorMessage = error.message;
+    let troubleshooting = '';
+    
+    if (error.name === 'AbortError' || error.message.includes('timeout')) {
+      errorMessage = 'Request timed out';
+      troubleshooting = 'The server might be starting up. Please wait 30 seconds and refresh the page.';
+    } else if (error.message.includes('Failed to fetch')) {
+      errorMessage = 'Cannot connect to server';
+      troubleshooting = 'The backend server might be down or starting up. Check that the server is running.';
+    }
+    
     container.innerHTML = `
       <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
-        <p style="color: #e74c3c; margin-bottom: 1rem;">⚠️ Failed to load products</p>
-        <p style="color: #7f8c8d; margin-bottom: 1rem;">Make sure the server is running on port 3000</p>
-        <p style="color: #7f8c8d;">Error: ${error.message}</p>
+        <div style="background: #fee; border: 1px solid #fcc; border-radius: 10px; padding: 2rem; max-width: 600px; margin: 0 auto;">
+          <p style="font-size: 3rem; margin-bottom: 1rem;">⚠️</p>
+          <h3 style="color: #e74c3c; margin-bottom: 1rem;">Failed to Load Products</h3>
+          <p style="color: #7f8c8d; margin-bottom: 1rem;">${errorMessage}</p>
+          ${troubleshooting ? `<p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.9rem;">${troubleshooting}</p>` : ''}
+          <button class="btn btn-primary" onclick="loadProducts()" style="margin-top: 1rem;">🔄 Try Again</button>
+        </div>
+        <div style="margin-top: 2rem; background: #f8f9fa; padding: 1.5rem; border-radius: 10px; max-width: 600px; margin: 2rem auto 0;">
+          <h4 style="margin-bottom: 1rem;">Debug Information:</h4>
+          <div style="text-align: left; font-family: monospace; font-size: 0.85rem;">
+            <p><strong>API URL:</strong> ${API_BASE_URL}/products</p>
+            <p><strong>Error:</strong> ${error.message}</p>
+            <p><strong>Error Type:</strong> ${error.name}</p>
+          </div>
+          <p style="margin-top: 1rem; font-size: 0.9rem; color: #7f8c8d;">Open browser console (F12) for more details</p>
+        </div>
       </div>
     `;
   }
@@ -366,9 +407,19 @@ function showMessage(message, type) {
   }
 }
 
-// Initialize
+// Initialize - wait for backend before loading
 if (document.getElementById('products-container')) {
-  loadProducts();
+  // Wait for backend to be ready
+  if (typeof waitForBackend === 'function') {
+    waitForBackend().then(() => {
+      console.log('Backend ready, loading products...');
+      loadProducts();
+    });
+  } else {
+    // Fallback if startup-check.js not loaded
+    console.log('Loading products without backend check...');
+    loadProducts();
+  }
 }
 
 updateCartCount();
