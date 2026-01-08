@@ -21,47 +21,6 @@ body {
   background-color: #f8f9fa;
 }
 
-.menu-toggle {
-  display: none; /* hidden on desktop */
-  font-size: 2.2rem;
-  color: white;
-  cursor: pointer;
-}
-
-/* Responsive mobile nav */
-@media (max-width: 768px) {
-  .menu-toggle {
-    display: block;
-  }
-
-  .nav-links {
-    position: absolute;
-    top: 100%; /* below navbar */
-    left: 0;
-    width: 100%;
-    flex-direction: column;
-    background: rgba(44, 62, 80, 0.95); /* dark semi-transparent */
-    display: none; /* hidden by default */
-    padding: 0;
-    margin: 0;
-    z-index: 999;
-  }
-
-  .nav-links.active {
-    display: flex; /* shows menu when toggled */
-  }
-
-  .nav-links li {
-    text-align: center;
-    padding: 12px 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-  }
-
-  .nav-links a {
-    font-size: 1.2rem;
-  }
-}
-
 /* Navigation */
 nav {
   background: 
@@ -179,6 +138,28 @@ nav {
 }
 
 @media (max-width: 768px) {
+
+  .nav-container {
+    flex-direction: column;  /* stack brand and links vertically */
+    align-items: center;     /* center everything */
+    gap: 10px;               /* space between title and links */
+  }
+
+  .nav-links {
+    flex-wrap: wrap;          /* allow links to wrap if too long */
+    justify-content: center;  /* center horizontally */
+    gap: 15px;                /* spacing between links */
+    margin-top: 10px;         /* space below logo/title */
+  }
+
+  .nav-links li {
+    padding: 0;               /* remove extra vertical padding */
+  }
+
+  .nav-links a {
+    font-size: 1rem;          /* adjust font for mobile */
+  }
+  
   .hero-content {
     flex-direction: column;
     text-align: center;
