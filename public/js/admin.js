@@ -168,19 +168,6 @@ async function loadAdminOrders() {
   tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Loading orders...</td></tr>';
   
   try {
-    // Wait a bit for auth to be ready
-    const user = auth.currentUser;
-    if (!user) {
-      console.log('No user logged in, waiting...');
-      await new Promise(resolve => {
-        const unsubscribe = auth.onAuthStateChanged(authUser => {
-          if (authUser) {
-            unsubscribe();
-            resolve();
-          }
-        });
-      });
-    }
     
     console.log('Loading admin orders...');
     const response = await authenticatedFetch(`${API_BASE_URL}/orders`);
@@ -454,14 +441,23 @@ function closeModal() {
 }
 
 // Initialize based on page
-if (document.getElementById('total-products')) {
-  loadDashboardStats();
-}
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    console.warn('Admin page: no user logged in');
+    return;
+  }
 
-if (document.getElementById('products-table')) {
-  loadAdminProducts();
-}
+  console.log('Admin page: auth ready →', user.email);
 
-if (document.getElementById('orders-table')) {
-  loadAdminOrders();
-}
+  if (document.getElementById('total-products')) {
+    loadDashboardStats();
+  }
+
+  if (document.getElementById('products-table')) {
+    loadAdminProducts();
+  }
+
+  if (document.getElementById('orders-table')) {
+    loadAdminOrders();
+  }
+});
