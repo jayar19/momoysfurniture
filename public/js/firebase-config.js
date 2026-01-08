@@ -16,78 +16,52 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// API base URL - Make sure this is correct
+// API base URL - MAKE SURE THIS IS CORRECT
+const API_BASE_URL = 'http://localhost:3000/api';
+console.log('API Base URL:', API_BASE_URL);
 
-
-// ------------------- Helper: Get Firebase ID Token -------------------
+// Helper function to get auth token
 async function getAuthToken() {
-  return new Promise((resolve) => {
-    const user = auth.currentUser;
-    if (user) {
-      user.getIdToken(true)
-        .then(token => resolve(token))
-        .catch(err => {
-          console.error('Error fetching token:', err);
-          resolve(null);
-        });
-    } else {
-      // Wait for auth state to be ready
-      const unsubscribe = auth.onAuthStateChanged(u => {
-        unsubscribe();
-        if (u) {
-          u.getIdToken(true)
-            .then(token => resolve(token))
-            .catch(err => {
-              console.error('Error fetching token:', err);
-              resolve(null);
-            });
-        } else {
-          resolve(null);
-        }
-      });
-    }
-  });
+  const user = auth.currentUser;
+  if (user) {
+    return await user.getIdToken();
+  }
+  return null;
 }
 
-// ------------------- Helper: Authenticated Fetch -------------------
-async function authenticatedFetch(endpoint, options = {}) {
+// Helper function for API calls with auth
+async function authenticatedFetch(url, options = {}) {
   const token = await getAuthToken();
-
+  
   const headers = {
     'Content-Type': 'application/json',
-    ...(options.headers || {})
+    ...options.headers
   };
-
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  const fullUrl = window.API_BASE_URL + endpoint;
-
-  console.log('➡️ Auth fetch:', fullUrl);
-
-  return fetch(fullUrl, {
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  console.log('Making authenticated request to:', url);
+  console.log('Has token:', !!token);
+  
+  return fetch(url, {
     ...options,
     headers
   });
 }
 
-// ------------------- Auth State Listener -------------------
-auth.onAuthStateChanged(async (user) => {
+// Check auth state
+auth.onAuthStateChanged((user) => {
   console.log('Auth state changed:', user ? user.email : 'Not logged in');
-
-  if (user) {
-    const token = await getAuthToken();
-    console.log('Admin verified token:', token ? '✅ Token exists' : '❌ No token');
-  }
-
   updateUIForAuthState(user);
 });
 
-// ------------------- UI Updates -------------------
 function updateUIForAuthState(user) {
   const authLinks = document.querySelectorAll('.auth-required');
   const guestLinks = document.querySelectorAll('.guest-only');
   const userEmail = document.getElementById('user-email');
-
+  
   if (user) {
     authLinks.forEach(link => link.style.display = 'block');
     guestLinks.forEach(link => link.style.display = 'none');
@@ -95,6 +69,5 @@ function updateUIForAuthState(user) {
   } else {
     authLinks.forEach(link => link.style.display = 'none');
     guestLinks.forEach(link => link.style.display = 'block');
-    if (userEmail) userEmail.textContent = '';
   }
 }
