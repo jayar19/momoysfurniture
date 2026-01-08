@@ -103,10 +103,19 @@ function displayProducts(products) {
       </div>
     </div>
   `).join('');
+  document.querySelectorAll('.view-details-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const product = JSON.parse(btn.dataset.product);
+    viewProductDetails(product);
+  });
+});
 }
 
 // View product details
 function viewProductDetails(product) {
+  // Remove existing modal if any
+  closeProductModal();
+
   const modal = document.createElement('div');
   modal.id = 'product-modal';
   modal.style.cssText = `
@@ -123,15 +132,16 @@ function viewProductDetails(product) {
     overflow-y: auto;
     padding: 2rem 1rem;
   `;
-  
+
   const hasVariants = product.variants && product.variants.length > 0;
   const defaultVariant = hasVariants ? product.variants[0] : null;
-  
+
+  // Build modal inner HTML
   modal.innerHTML = `
     <div style="background: white; border-radius: 15px; max-width: 900px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
       <div style="position: sticky; top: 0; background: white; z-index: 10; padding: 1.5rem; border-bottom: 1px solid #ecf0f1; display: flex; justify-content: space-between; align-items: center; border-radius: 15px 15px 0 0;">
         <h2 style="margin: 0;">${product.name}</h2>
-        <button onclick="closeProductModal()" style="background: none; border: none; font-size: 2rem; cursor: pointer; color: #7f8c8d; line-height: 1;">&times;</button>
+        <button id="close-product-modal" style="background: none; border: none; font-size: 2rem; cursor: pointer; color: #7f8c8d;">&times;</button>
       </div>
       
       <div style="padding: 2rem;">
@@ -142,7 +152,7 @@ function viewProductDetails(product) {
                  onerror="this.src='https://via.placeholder.com/400x400?text=No+Image'">
             <p style="color: #7f8c8d; font-size: 0.85rem; margin-top: 0.5rem; text-align: center;">Click variant to see image</p>
           </div>
-          
+
           <div>
             <p style="color: #7f8c8d; margin-bottom: 1rem;">${product.description}</p>
             <p style="font-size: 0.9rem; color: #95a5a6; margin-bottom: 0.5rem;">Category: ${product.category}</p>
@@ -150,72 +160,76 @@ function viewProductDetails(product) {
               <span style="font-size: 2rem; font-weight: bold; color: #e67e22;" id="selected-price">₱${hasVariants ? defaultVariant.price.toLocaleString() : product.price.toLocaleString()}</span>
               <span style="color: #27ae60; font-size: 0.9rem;" id="stock-status">${hasVariants ? defaultVariant.stock : product.stock} in stock</span>
             </div>
-            
+
             ${hasVariants ? `
               <div style="margin-bottom: 1.5rem;">
                 <label style="display: block; font-weight: 600; margin-bottom: 0.75rem; font-size: 1.1rem;">Select Variant:</label>
                 <div id="variants-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                  ${product.variants.map((variant, index) => `
-                    <div class="variant-option ${index === 0 ? 'selected' : ''}" 
-                         onclick='selectVariant(${JSON.stringify(variant).replace(/'/g, "&apos;")})' 
-                         data-variant-id="${variant.id}"
-                         style="padding: 1rem; border: 2px solid ${index === 0 ? '#3498db' : '#ecf0f1'}; border-radius: 8px; cursor: pointer; transition: all 0.3s; background: ${index === 0 ? '#e3f2fd' : 'white'};">
+                  ${product.variants.map((v, i) => `
+                    <div class="variant-option" data-variant-id="${v.id}" style="padding: 1rem; border: 2px solid ${i === 0 ? '#3498db' : '#ecf0f1'}; border-radius: 8px; cursor: pointer; background: ${i === 0 ? '#e3f2fd' : 'white'};">
                       <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                          <strong style="color: #2c3e50;">${variant.name}</strong>
-                          <p style="margin: 0.25rem 0 0 0; color: #7f8c8d; font-size: 0.9rem;">${variant.stock} available</p>
+                          <strong style="color: #2c3e50;">${v.name}</strong>
+                          <p style="margin: 0.25rem 0 0 0; color: #7f8c8d; font-size: 0.9rem;">${v.stock} available</p>
                         </div>
-                        <strong style="color: #e67e22;">₱${variant.price.toLocaleString()}</strong>
+                        <strong style="color: #e67e22;">₱${v.price.toLocaleString()}</strong>
                       </div>
                     </div>
                   `).join('')}
                 </div>
               </div>
             ` : ''}
-            
+
             <div style="margin-bottom: 1.5rem;">
               <label style="display: block; font-weight: 600; margin-bottom: 0.75rem;">Quantity:</label>
               <div style="display: flex; align-items: center; gap: 1rem;">
-                <button onclick="changeQuantity(-1)" style="width: 40px; height: 40px; border: 1px solid #bdc3c7; background: white; border-radius: 5px; cursor: pointer; font-size: 1.2rem;">−</button>
+                <button id="qty-decrease" style="width: 40px; height: 40px; border: 1px solid #bdc3c7; background: white; border-radius: 5px; cursor: pointer; font-size: 1.2rem;">−</button>
                 <input type="number" id="product-quantity" value="1" min="1" max="${hasVariants ? defaultVariant.stock : product.stock}" 
                        style="width: 80px; text-align: center; padding: 0.5rem; border: 1px solid #bdc3c7; border-radius: 5px; font-size: 1.1rem;">
-                <button onclick="changeQuantity(1)" style="width: 40px; height: 40px; border: 1px solid #bdc3c7; background: white; border-radius: 5px; cursor: pointer; font-size: 1.2rem;">+</button>
+                <button id="qty-increase" style="width: 40px; height: 40px; border: 1px solid #bdc3c7; background: white; border-radius: 5px; cursor: pointer; font-size: 1.2rem;">+</button>
               </div>
             </div>
-            
+
             <div style="margin-bottom: 1.5rem;">
               <label style="display: block; font-weight: 600; margin-bottom: 0.75rem;">Special Remarks / Customization:</label>
-              <textarea id="product-remarks" 
-                        placeholder="Add any special requests, color preferences, or customization notes..."
-                        style="width: 100%; min-height: 100px; padding: 0.75rem; border: 1px solid #bdc3c7; border-radius: 8px; font-family: inherit; resize: vertical;"></textarea>
-              <p style="font-size: 0.85rem; color: #7f8c8d; margin-top: 0.5rem;">💡 Example: "Please deliver between 2-5 PM" or "Need assembly service"</p>
+              <textarea id="product-remarks" placeholder="Add any special requests..." style="width: 100%; min-height: 100px; padding: 0.75rem; border: 1px solid #bdc3c7; border-radius: 8px; font-family: inherit; resize: vertical;"></textarea>
             </div>
-            
+
             <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-              <button onclick="addToCartFromModal(${JSON.stringify(product).replace(/'/g, "&apos;")})" 
-                      class="btn btn-secondary" style="flex: 1; padding: 1rem; font-size: 1.1rem;">
-                🛒 Add to Cart
-              </button>
-              <button onclick="buyNowFromModal(${JSON.stringify(product).replace(/'/g, "&apos;")})" 
-                      class="btn btn-primary" style="flex: 1; padding: 1rem; font-size: 1.1rem;">
-                ⚡ Buy Now
-              </button>
+              <button id="add-to-cart-btn" class="btn btn-secondary" style="flex: 1; padding: 1rem; font-size: 1.1rem;">🛒 Add to Cart</button>
+              <button id="buy-now-btn" class="btn btn-primary" style="flex: 1; padding: 1rem; font-size: 1.1rem;">⚡ Buy Now</button>
             </div>
           </div>
         </div>
       </div>
     </div>
   `;
-  
+
   document.body.appendChild(modal);
   document.body.style.overflow = 'hidden';
-  
-  // Close on background click
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      closeProductModal();
-    }
-  });
+
+  // Event listeners
+  document.getElementById('close-product-modal').addEventListener('click', closeProductModal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeProductModal(); });
+
+  // Quantity buttons
+  document.getElementById('qty-decrease').addEventListener('click', () => changeQuantity(-1));
+  document.getElementById('qty-increase').addEventListener('click', () => changeQuantity(1));
+
+  // Variant selection
+  if (hasVariants) {
+    modal.querySelectorAll('.variant-option').forEach(el => {
+      el.addEventListener('click', () => {
+        const variantId = el.dataset.variantId;
+        const variant = product.variants.find(v => v.id === variantId);
+        selectVariant(variant);
+      });
+    });
+  }
+
+  // Add to cart & buy now
+  document.getElementById('add-to-cart-btn').addEventListener('click', () => addToCartFromModal(product));
+  document.getElementById('buy-now-btn').addEventListener('click', () => buyNowFromModal(product));
 }
 
 // Select variant
