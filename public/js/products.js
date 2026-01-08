@@ -149,7 +149,7 @@ function viewProductDetails(product) {
           <div>
             <img id="product-main-image" src="${hasVariants ? defaultVariant.imageUrl : product.imageUrl}" 
                  style="width: 100%; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);" 
-                 onerror="this.src='https://via.placeholder.com/400x400?text=No+Image'">
+                 onerror="this.src='https://ibb.co/vxP0vThm'">
             <p style="color: #7f8c8d; font-size: 0.85rem; margin-top: 0.5rem; text-align: center;">Click variant to see image</p>
           </div>
 
