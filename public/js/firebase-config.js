@@ -9,28 +9,44 @@ const firebaseConfig = {
   measurementId: "G-XPZY184G3L"
 };
 
+console.log('🔥 Firebase initializing...');
+
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
+
+// Set auth persistence
+firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+  .then(() => console.log('✅ Auth persistence enabled'))
+  .catch((error) => console.error('Auth persistence error:', error));
 
 // Initialize services
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// API base URL - MAKE SURE THIS IS CORRECT
-const API_BASE_URL = 'http://localhost:3000/api';
-console.log('API Base URL:', API_BASE_URL);
+console.log('✅ Firebase services initialized');
+console.log('🔗 API URL from config:', API_BASE_URL);
 
-// Helper function to get auth token
+// Get auth token
 async function getAuthToken() {
   const user = auth.currentUser;
   if (user) {
-    return await user.getIdToken();
+    try {
+      return await user.getIdToken();
+    } catch (error) {
+      console.error('Token error:', error);
+      return null;
+    }
   }
   return null;
 }
 
-// Helper function for API calls with auth
+// Authenticated fetch helper
 async function authenticatedFetch(url, options = {}) {
+  // Use URL as-is if it's already complete, otherwise prepend API_BASE_URL
+  const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+  
+  console.log('📡 Fetching:', fullUrl);
+  
   const token = await getAuthToken();
   
   const headers = {
@@ -42,21 +58,23 @@ async function authenticatedFetch(url, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
   
-  console.log('Making authenticated request to:', url);
-  console.log('Has token:', !!token);
-  
-  return fetch(url, {
+  const response = await fetch(fullUrl, {
     ...options,
     headers
   });
+  
+  console.log('📥 Response:', response.status);
+  
+  return response;
 }
 
-// Check auth state
+// Auth state observer
 auth.onAuthStateChanged((user) => {
-  console.log('Auth state changed:', user ? user.email : 'Not logged in');
+  console.log('👤 Auth:', user ? user.email : 'Not logged in');
   updateUIForAuthState(user);
 });
 
+// Update UI based on auth state
 function updateUIForAuthState(user) {
   const authLinks = document.querySelectorAll('.auth-required');
   const guestLinks = document.querySelectorAll('.guest-only');
