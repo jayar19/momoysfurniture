@@ -138,19 +138,16 @@ nav {
 }
 
 @media (max-width: 768px) {
-
-  .nav-brand span {
-  font-family: "Bradley Hand", cursive;
-}
   .nav-container {
     align-items: center;     /* center everything */
     gap: 5px;               /* space between title and links */
   }
 
   .nav-links {
+    display: flex;
     flex-wrap: wrap;          /* allow links to wrap if too long */
     justify-content: center;  /* center horizontally */
-    gap: 10px;                /* spacing between links */
+    gap: 5px;                /* spacing between links */
     margin-top: 5px;         /* space below logo/title */
   }
 
