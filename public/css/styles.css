@@ -149,6 +149,7 @@ nav {
   }
 
   .nav-links {
+    flex-direction: column;
     flex-wrap: wrap;          /* allow links to wrap if too long */
     justify-content: center;  /* center horizontally */
     gap: 10px;                /* spacing between links */
