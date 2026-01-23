@@ -145,14 +145,14 @@ nav {
   .nav-container {
     flex-direction: column;  /* stack brand and links vertically */
     align-items: center;     /* center everything */
-    gap: 10px;               /* space between title and links */
+    gap: 5px;               /* space between title and links */
   }
 
   .nav-links {
     flex-wrap: wrap;          /* allow links to wrap if too long */
     justify-content: center;  /* center horizontally */
-    gap: 15px;                /* spacing between links */
-    margin-top: 10px;         /* space below logo/title */
+    gap: 10px;                /* spacing between links */
+    margin-top: 5px;         /* space below logo/title */
   }
 
   .nav-links li {
