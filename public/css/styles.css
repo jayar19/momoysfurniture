@@ -139,6 +139,9 @@ nav {
 
 @media (max-width: 768px) {
 
+  .nav-brand span {
+  font-family: "Bradley Hand", cursive;
+}
   .nav-container {
     flex-direction: column;  /* stack brand and links vertically */
     align-items: center;     /* center everything */
