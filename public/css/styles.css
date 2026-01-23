@@ -143,13 +143,11 @@ nav {
   font-family: "Bradley Hand", cursive;
 }
   .nav-container {
-    flex-direction: column;  /* stack brand and links vertically */
     align-items: center;     /* center everything */
     gap: 5px;               /* space between title and links */
   }
 
   .nav-links {
-    flex-direction: column;
     flex-wrap: wrap;          /* allow links to wrap if too long */
     justify-content: center;  /* center horizontally */
     gap: 10px;                /* spacing between links */
