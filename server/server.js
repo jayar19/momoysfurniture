@@ -58,7 +58,7 @@ console.log('Server Session ID:', SERVER_SESSION_ID);
 
 // Middleware - CORS configuration (allow same origin)
 app.use(cors({
-  origin: true, // Allow requests from same origin
+  origin: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -73,18 +73,26 @@ app.use((req, res, next) => {
 app.use(bodyParser.json());
 
 // API Routes (must come before static files)
-const productRoutes = require('./routes/products');
-const orderRoutes = require('./routes/orders');
-const paymentRoutes = require('./routes/payments');
+const productRoutes      = require('./routes/products');
+const orderRoutes        = require('./routes/orders');
+const paymentRoutes      = require('./routes/payments');
+const userRoutes         = require('./routes/users');
+const queryRoutes        = require('./routes/queries');
+const testimonialRoutes  = require('./routes/testimonials');
+const brandRoutes        = require('./routes/brands');
 
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/payments', paymentRoutes);
+app.use('/api/products',     productRoutes);
+app.use('/api/orders',       orderRoutes);
+app.use('/api/payments',     paymentRoutes);
+app.use('/api/users',        userRoutes);
+app.use('/api/queries',      queryRoutes);
+app.use('/api/testimonials', testimonialRoutes);
+app.use('/api/brands',       brandRoutes);
 
 // API Health check with session ID
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     message: 'Server is running',
     sessionId: SERVER_SESSION_ID,
     timestamp: new Date().toISOString(),
@@ -96,21 +104,20 @@ app.get('/api/health', (req, res) => {
 app.get('/api/test', async (req, res) => {
   try {
     const snapshot = await db.collection('products').limit(1).get();
-    res.json({ 
-      status: 'Database connected', 
+    res.json({
+      status: 'Database connected',
       productsCount: snapshot.size,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    res.status(500).json({ 
-      status: 'Database error', 
-      error: error.message 
+    res.status(500).json({
+      status: 'Database error',
+      error: error.message
     });
   }
 });
 
 // Serve static files from public directory (AFTER API routes)
-// This serves your HTML, CSS, JS files from GitHub
 app.use(express.static('public'));
 
 // Serve admin files
@@ -118,12 +125,9 @@ app.use('/admin', express.static(path.join(__dirname, '../public/admin')));
 
 // Fallback for SPA routing - serve index.html for any non-API routes
 app.get('*', (req, res, next) => {
-  // Skip API routes
   if (req.url.startsWith('/api')) {
     return next();
   }
-  
-  // Serve index.html for all other routes
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
@@ -142,5 +146,4 @@ app.listen(PORT, () => {
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
-// Don't export db - routes will get it from admin.firestore()
 module.exports = { app };
