@@ -334,37 +334,38 @@
   <script src="/js/config.js"></script>
 
   <script>
-    const modal         = document.getElementById('agreement-modal');
-    const checkoutBtn   = document.getElementById('checkout-btn');
-    const closeBtn      = document.getElementById('agreement-close-btn');
-    const agreeCheckbox = document.getElementById('agree-checkbox');
-    const confirmBtn    = document.getElementById('confirm-checkout-btn');
+    const agreementModal = document.getElementById('agreement-modal');
+    const closeBtn       = document.getElementById('agreement-close-btn');
+    const agreeCheckbox  = document.getElementById('agree-checkbox');
+    const confirmBtn     = document.getElementById('confirm-checkout-btn');
 
-    // Open modal when "Proceed to Checkout" is clicked
-    checkoutBtn.addEventListener('click', () => {
+    // Override the checkout-btn click AFTER cart.js has loaded
+    // cart.js binds its own listener, so we use capture phase to intercept first
+    document.getElementById('checkout-btn').addEventListener('click', (e) => {
+      e.stopImmediatePropagation(); // prevent cart.js listener from firing
       agreeCheckbox.checked = false;
       confirmBtn.disabled = true;
       confirmBtn.classList.remove('enabled');
-      modal.classList.add('open');
+      agreementModal.classList.add('open');
       document.body.style.overflow = 'hidden';
-    });
+    }, true); // capture = true so this runs before cart.js bubble listener
 
     // Close modal
-    function closeModal() {
-      modal.classList.remove('open');
+    function closeAgreementModal() {
+      agreementModal.classList.remove('open');
       document.body.style.overflow = '';
     }
 
-    closeBtn.addEventListener('click', closeModal);
+    closeBtn.addEventListener('click', closeAgreementModal);
 
     // Close on backdrop click
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModal();
+    agreementModal.addEventListener('click', (e) => {
+      if (e.target === agreementModal) closeAgreementModal();
     });
 
     // Close on Escape key
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && modal.classList.contains('open')) closeModal();
+      if (e.key === 'Escape' && agreementModal.classList.contains('open')) closeAgreementModal();
     });
 
     // Enable confirm button only when checkbox is ticked
@@ -373,18 +374,11 @@
       confirmBtn.classList.toggle('enabled', agreeCheckbox.checked);
     });
 
-    // Confirm — trigger the actual checkout flow from cart.js
+    // Confirm — close modal then call checkout() from cart.js
     confirmBtn.addEventListener('click', () => {
       if (!agreeCheckbox.checked) return;
-      closeModal();
-      // Calls the existing placeOrder / checkout function from cart.js
-      if (typeof placeOrder === 'function') {
-        placeOrder();
-      } else if (typeof checkout === 'function') {
-        checkout();
-      } else {
-        console.warn('No checkout function found. Make sure cart.js exposes placeOrder() or checkout().');
-      }
+      closeAgreementModal();
+      checkout(); // defined in cart.js
     });
   </script>
 </body>
