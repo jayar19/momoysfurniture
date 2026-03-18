@@ -7,6 +7,67 @@
   <link rel="apple-touch-icon" href="/images/logo.png">
   <title>Admin Dashboard - MOMOY'S Furniture</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .admin-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      border-left: 4px solid #ccc;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+    }
+
+    .stat-card h3 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #888;
+      margin: 0 0 0.5rem 0;
+      font-weight: 600;
+    }
+
+    .stat-card p {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin: 0;
+      color: #1a1a2e;
+      line-height: 1;
+    }
+
+    .stat-card .stat-icon {
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    /* Color coding by category */
+    .stat-card.finance   { border-left-color: #27ae60; }
+    .stat-card.orders    { border-left-color: #2980b9; }
+    .stat-card.inventory { border-left-color: #8e44ad; }
+    .stat-card.users     { border-left-color: #e67e22; }
+    .stat-card.comms     { border-left-color: #c0392b; }
+
+    .stat-section-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #aaa;
+      margin: 1.5rem 0 0.6rem 0;
+      font-weight: 700;
+    }
+  </style>
 </head>
 <body>
   <!-- Navigation -->
@@ -32,22 +93,72 @@
 
     <!-- Dashboard Stats -->
     <div class="admin-stats">
-      <div class="stat-card">
-        <h3>Total Products</h3>
-        <p id="total-products">-</p>
+
+      <!-- Finance -->
+      <div class="stat-card finance">
+        <span class="stat-icon">💰</span>
+        <h3>Total Earned</h3>
+        <p id="total-earned">₱-</p>
       </div>
-      <div class="stat-card">
-        <h3>Total Orders</h3>
-        <p id="total-orders">-</p>
+      <div class="stat-card finance">
+        <span class="stat-icon">✅</span>
+        <h3>Completed Purchase</h3>
+        <p id="completed-purchase">-</p>
       </div>
-      <div class="stat-card">
-        <h3>Total Revenue</h3>
-        <p id="total-revenue">₱-</p>
+      <div class="stat-card finance">
+        <span class="stat-icon">📥</span>
+        <h3>Receivable Amount</h3>
+        <p id="receivable-amount">₱-</p>
       </div>
-      <div class="stat-card">
+
+      <!-- Orders -->
+      <div class="stat-card orders">
+        <span class="stat-icon">👍</span>
+        <h3>Approved Orders</h3>
+        <p id="approved-orders">-</p>
+      </div>
+      <div class="stat-card orders">
+        <span class="stat-icon">📦</span>
+        <h3>Completed Orders</h3>
+        <p id="completed-orders">-</p>
+      </div>
+      <div class="stat-card orders">
+        <span class="stat-icon">⏳</span>
         <h3>Pending Orders</h3>
         <p id="pending-orders">-</p>
       </div>
+
+      <!-- Inventory -->
+      <div class="stat-card inventory">
+        <span class="stat-icon">🛋️</span>
+        <h3>Listed Products</h3>
+        <p id="listed-products">-</p>
+      </div>
+      <div class="stat-card inventory">
+        <span class="stat-icon">🏷️</span>
+        <h3>Listed Brands</h3>
+        <p id="listed-brands">-</p>
+      </div>
+
+      <!-- Users -->
+      <div class="stat-card users">
+        <span class="stat-icon">👥</span>
+        <h3>Registered Users</h3>
+        <p id="registered-users">-</p>
+      </div>
+
+      <!-- Communications -->
+      <div class="stat-card comms">
+        <span class="stat-icon">💬</span>
+        <h3>Queries</h3>
+        <p id="total-queries">-</p>
+      </div>
+      <div class="stat-card comms">
+        <span class="stat-icon">⭐</span>
+        <h3>Testimonials</h3>
+        <p id="total-testimonials">-</p>
+      </div>
+
     </div>
 
     <!-- Products Table -->
@@ -56,7 +167,7 @@
       <div style="margin-bottom: 1rem;">
         <a href="/admin/add-product.html" class="btn btn-primary">Add New Product</a>
       </div>
-      
+
       <div class="data-table">
         <table id="products-table">
           <thead>
@@ -88,7 +199,6 @@
   <script src="/js/admin.js"></script>
 
   <script>
-    // --- Admin Authentication Check ---
     let authChecked = false;
 
     auth.onAuthStateChanged(async (user) => {
@@ -112,7 +222,6 @@
           return;
         }
 
-        // Load dashboard stats and products
         loadDashboardStats();
         loadAdminProducts();
 
@@ -123,7 +232,6 @@
       }
     });
 
-    // Logout button
     document.getElementById('logout-btn')?.addEventListener('click', async () => {
       await auth.signOut();
       window.location.href = '/login.html';
