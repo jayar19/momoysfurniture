@@ -20,7 +20,6 @@
       border-radius: 10px;
       padding: 1.25rem 1.5rem;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      border-left: 4px solid #ccc;
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
@@ -44,28 +43,6 @@
       margin: 0;
       color: #1a1a2e;
       line-height: 1;
-    }
-
-    .stat-card .stat-icon {
-      font-size: 1.4rem;
-      margin-bottom: 0.5rem;
-      display: block;
-    }
-
-    /* Color coding by category */
-    .stat-card.finance   { border-left-color: #27ae60; }
-    .stat-card.orders    { border-left-color: #2980b9; }
-    .stat-card.inventory { border-left-color: #8e44ad; }
-    .stat-card.users     { border-left-color: #e67e22; }
-    .stat-card.comms     { border-left-color: #c0392b; }
-
-    .stat-section-label {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #aaa;
-      margin: 1.5rem 0 0.6rem 0;
-      font-weight: 700;
     }
   </style>
 </head>
@@ -94,67 +71,47 @@
     <!-- Dashboard Stats -->
     <div class="admin-stats">
 
-      <!-- Finance -->
-      <div class="stat-card finance">
-        <span class="stat-icon">💰</span>
+      <div class="stat-card">
         <h3>Total Earned</h3>
         <p id="total-earned">₱-</p>
       </div>
-      <div class="stat-card finance">
-        <span class="stat-icon">✅</span>
+      <div class="stat-card">
         <h3>Completed Purchase</h3>
         <p id="completed-purchase">-</p>
       </div>
-      <div class="stat-card finance">
-        <span class="stat-icon">📥</span>
+      <div class="stat-card">
         <h3>Receivable Amount</h3>
         <p id="receivable-amount">₱-</p>
       </div>
-
-      <!-- Orders -->
-      <div class="stat-card orders">
-        <span class="stat-icon">👍</span>
+      <div class="stat-card">
         <h3>Approved Orders</h3>
         <p id="approved-orders">-</p>
       </div>
-      <div class="stat-card orders">
-        <span class="stat-icon">📦</span>
+      <div class="stat-card">
         <h3>Completed Orders</h3>
         <p id="completed-orders">-</p>
       </div>
-      <div class="stat-card orders">
-        <span class="stat-icon">⏳</span>
+      <div class="stat-card">
         <h3>Pending Orders</h3>
         <p id="pending-orders">-</p>
       </div>
-
-      <!-- Inventory -->
-      <div class="stat-card inventory">
-        <span class="stat-icon">🛋️</span>
+      <div class="stat-card">
         <h3>Listed Products</h3>
         <p id="listed-products">-</p>
       </div>
-      <div class="stat-card inventory">
-        <span class="stat-icon">🏷️</span>
+      <div class="stat-card">
         <h3>Listed Brands</h3>
         <p id="listed-brands">-</p>
       </div>
-
-      <!-- Users -->
-      <div class="stat-card users">
-        <span class="stat-icon">👥</span>
+      <div class="stat-card">
         <h3>Registered Users</h3>
         <p id="registered-users">-</p>
       </div>
-
-      <!-- Communications -->
-      <div class="stat-card comms">
-        <span class="stat-icon">💬</span>
+      <div class="stat-card">
         <h3>Queries</h3>
         <p id="total-queries">-</p>
       </div>
-      <div class="stat-card comms">
-        <span class="stat-icon">⭐</span>
+      <div class="stat-card">
         <h3>Testimonials</h3>
         <p id="total-testimonials">-</p>
       </div>
