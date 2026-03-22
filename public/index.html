@@ -28,14 +28,6 @@
         <li class="auth-required" style="display: none;"><a href="#" id="logout-btn">Account</a></li>
         <li class="guest-only"><a href="/login.html">Account</a></li>
       </ul>
-      <div class="nav-search">
-        <input type="text" id="nav-search-input" placeholder="Search products..." autocomplete="off">
-        <button id="nav-search-btn" aria-label="Search">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-        </button>
-      </div>
     </div>
   </nav>
 
@@ -132,19 +124,19 @@
       <div class="why-grid product-grid">
         <div class="product-card">
           <div class="product-info">
-            <h3>🪑 Quality Furniture</h3>
+            <h3>Quality Furniture</h3>
             <p>Handpicked furniture pieces that combine style and durability for your home.</p>
           </div>
         </div>
         <div class="product-card">
           <div class="product-info">
-            <h3>💰 Flexible Payment</h3>
+            <h3>Flexible Payment</h3>
             <p>Pay only 30% down payment and settle the balance upon delivery.</p>
           </div>
         </div>
         <div class="product-card">
           <div class="product-info">
-            <h3>🚚 Track Delivery</h3>
+            <h3>Track Delivery</h3>
             <p>Real-time delivery tracking with Google Maps integration.</p>
           </div>
         </div>
@@ -222,19 +214,6 @@
   <script src="/js/auth.js"></script>
   <script src="/js/products.js"></script>
   <script src="/js/config.js"></script>
-  <script>
-    // Search bar
-    document.getElementById('nav-search-btn').addEventListener('click', () => {
-      const q = document.getElementById('nav-search-input').value.trim();
-      if (q) window.location.href = `/products.html?search=${encodeURIComponent(q)}`;
-    });
-    document.getElementById('nav-search-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        const q = e.target.value.trim();
-        if (q) window.location.href = `/products.html?search=${encodeURIComponent(q)}`;
-      }
-    });
-  </script>
 
   <script>
     // Hide nav on scroll down, show on scroll up
