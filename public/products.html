@@ -104,6 +104,17 @@
     // Run after products.js initializes
     window.addEventListener('DOMContentLoaded', () => {
       autoOpenProductFromURL();
+
+      // Auto-select category from URL ?category=
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get('category');
+      if (cat) {
+        const filter = document.getElementById('category-filter');
+        if (filter) {
+          filter.value = cat;
+          loadProducts(cat);
+        }
+      }
     });
   </script>
 
