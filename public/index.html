@@ -4,16 +4,595 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
-<link rel="apple-touch-icon" href="/images/logo.png">
+  <link rel="apple-touch-icon" href="/images/logo.png">
   <title>MOMOY'S Furniture - Home</title>
   <link rel="stylesheet" href="/css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      --yellow: #FFDA1A;
+      --dark:   #111111;
+      --mid:    #444444;
+      --muted:  #767676;
+      --light:  #F5F5F0;
+      --border: #E0E0DA;
+      --white:  #FFFFFF;
+      --serif:  'Noto Serif Display', Georgia, serif;
+      --sans:   'DM Sans', system-ui, sans-serif;
+    }
+
+    body { font-family: var(--sans); margin: 0; padding: 0; background: var(--white); color: var(--dark); }
+    a { text-decoration: none; color: inherit; }
+    img { display: block; max-width: 100%; }
+
+    /* ── Announcement Bar ── */
+    .announce-bar {
+      background: var(--dark);
+      color: var(--white);
+      text-align: center;
+      font-size: 0.8rem;
+      padding: 0.55rem 1rem;
+      letter-spacing: 0.04em;
+    }
+    .announce-bar a { color: var(--yellow); text-decoration: underline; }
+
+    /* ── Nav ── */
+    nav {
+      background: var(--yellow) !important;
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 200 !important;
+      border-bottom: 2px solid rgba(0,0,0,0.08) !important;
+      box-shadow: none !important;
+    }
+
+    .nav-container {
+      max-width: 1400px !important;
+      margin: 0 auto !important;
+      display: flex !important;
+      align-items: center !important;
+      padding: 0 1.5rem !important;
+      height: 70px !important;
+      gap: 2rem !important;
+    }
+
+    .nav-brand {
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.65rem !important;
+      font-family: var(--serif) !important;
+      font-size: 1.2rem !important;
+      font-weight: 700 !important;
+      color: var(--dark) !important;
+      white-space: nowrap !important;
+      flex-shrink: 0 !important;
+    }
+
+    .nav-logo { height: 38px !important; width: 38px !important; object-fit: contain !important; }
+
+    .nav-links {
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.2rem !important;
+      list-style: none !important;
+      margin: 0 0 0 auto !important;
+      padding: 0 !important;
+    }
+
+    .nav-links li a {
+      padding: 0.45rem 0.85rem !important;
+      font-size: 0.88rem !important;
+      font-weight: 500 !important;
+      color: var(--dark) !important;
+      border-radius: 999px !important;
+      transition: background 0.15s !important;
+      display: block !important;
+      background: transparent !important;
+    }
+
+    .nav-links li a:hover { background: rgba(0,0,0,0.08) !important; }
+
+    .nav-links li:last-of-type a {
+      background: var(--dark) !important;
+      color: var(--white) !important;
+    }
+
+    .nav-links li:last-of-type a:hover { background: var(--mid) !important; }
+
+    /* ── Category Strip ── */
+    .cat-strip {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .cat-strip::-webkit-scrollbar { display: none; }
+
+    .cat-strip-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      padding: 0 1.5rem;
+    }
+
+    .cat-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0.85rem 1.1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--mid);
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: border-color 0.15s, color 0.15s;
+      gap: 0.35rem;
+      cursor: pointer;
+    }
+
+    .cat-chip:hover { border-bottom-color: var(--dark); color: var(--dark); }
+    .cat-chip .cat-icon { font-size: 1.4rem; line-height: 1; }
+
+    /* ── Hero ── */
+    .hero {
+      background: var(--light) !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      min-height: unset !important;
+      overflow: hidden;
+    }
+
+    .hero-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 480px;
+    }
+
+    .hero-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 4rem 3rem 4rem 2.5rem;
+    }
+
+    .hero-tag {
+      display: inline-block;
+      background: var(--yellow);
+      color: var(--dark);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 1.25rem;
+      width: fit-content;
+      animation: fadeUp 0.5s 0.1s both;
+    }
+
+    .hero-text h1 {
+      font-family: var(--serif) !important;
+      font-size: clamp(1.9rem, 3.5vw, 3rem) !important;
+      font-weight: 700 !important;
+      line-height: 1.15 !important;
+      color: var(--dark) !important;
+      margin: 0 0 1rem !important;
+      animation: fadeUp 0.5s 0.2s both;
+    }
+
+    .hero-text p {
+      font-size: 1rem !important;
+      color: var(--muted) !important;
+      max-width: 400px !important;
+      margin: 0 0 2rem !important;
+      line-height: 1.7 !important;
+      animation: fadeUp 0.5s 0.3s both;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      animation: fadeUp 0.5s 0.4s both;
+    }
+
+    .btn { display: inline-block; border-radius: 999px; font-weight: 600; font-size: 0.9rem; transition: background 0.2s, transform 0.15s; cursor: pointer; }
+    .btn-primary { background: var(--dark) !important; color: var(--white) !important; border: none !important; padding: 0.75rem 1.75rem !important; }
+    .btn-primary:hover { background: var(--mid) !important; transform: translateY(-1px); }
+    .btn-secondary { background: transparent !important; color: var(--dark) !important; border: 2px solid var(--dark) !important; padding: 0.7rem 1.65rem !important; }
+    .btn-secondary:hover { background: var(--dark) !important; color: var(--white) !important; transform: translateY(-1px); }
+
+    .hero-image {
+      position: relative;
+      overflow: hidden;
+      min-height: 320px;
+    }
+
+    .hero-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      transform: scale(1.02);
+      transition: transform 6s ease;
+    }
+
+    .hero:hover .hero-image img { transform: scale(1); }
+
+    .hero-badge {
+      position: absolute;
+      bottom: 2rem;
+      left: 2rem;
+      background: var(--yellow);
+      color: var(--dark);
+      padding: 0.75rem 1.25rem;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    /* ── Featured Products ── */
+    .featured-section {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 3.5rem 1.5rem;
+    }
+
+    .featured-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+
+    .featured-section h2 {
+      font-family: var(--serif) !important;
+      font-size: clamp(1.4rem, 2.5vw, 2rem) !important;
+      font-weight: 700 !important;
+      color: var(--dark) !important;
+      margin: 0 !important;
+    }
+
+    .section-link {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--dark);
+      text-decoration: underline;
+      white-space: nowrap;
+    }
+    .section-link:hover { color: var(--muted); }
+
+    .masonry-grid {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+      gap: 1.25rem !important;
+    }
+
+    .masonry-grid .product-card {
+      background: var(--white) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 4px !important;
+      overflow: hidden !important;
+      transition: box-shadow 0.2s, transform 0.2s !important;
+      cursor: pointer !important;
+      position: relative !important;
+      box-shadow: none !important;
+    }
+
+    .masonry-grid .product-card:hover {
+      box-shadow: 0 8px 28px rgba(0,0,0,0.1) !important;
+      transform: translateY(-3px) !important;
+    }
+
+    .masonry-grid .product-card img {
+      width: 100% !important;
+      aspect-ratio: 4/3 !important;
+      object-fit: cover !important;
+      transition: transform 0.4s !important;
+      height: auto !important;
+    }
+
+    .masonry-grid .product-card:hover img { transform: scale(1.05) !important; }
+
+    .overlay {
+      padding: 0.9rem 1rem 1.1rem !important;
+      background: var(--white) !important;
+      position: static !important;
+      opacity: 1 !important;
+    }
+
+    .overlay h3 {
+      font-size: 0.95rem !important;
+      font-weight: 600 !important;
+      color: var(--dark) !important;
+      margin: 0 !important;
+    }
+
+    /* ── Promo Banners ── */
+    .promo-section {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1.5rem 3.5rem;
+    }
+
+    .promo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    .promo-card {
+      position: relative;
+      border-radius: 4px;
+      overflow: hidden;
+      min-height: 280px;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .promo-card img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s;
+    }
+
+    .promo-card:hover img { transform: scale(1.04); }
+
+    .promo-content {
+      position: relative;
+      z-index: 2;
+      padding: 1.75rem;
+      background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 100%);
+      width: 100%;
+    }
+
+    .promo-label {
+      display: inline-block;
+      background: var(--yellow);
+      color: var(--dark);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      margin-bottom: 0.6rem;
+    }
+
+    .promo-title {
+      font-family: var(--serif);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1.2;
+      margin: 0 0 0.75rem;
+    }
+
+    .promo-btn {
+      background: var(--white);
+      color: var(--dark);
+      padding: 0.5rem 1.2rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: inline-block;
+      transition: background 0.2s;
+    }
+
+    .promo-btn:hover { background: var(--yellow); }
+
+    /* ── Why Choose Us ── */
+    .why-section {
+      background: var(--dark);
+      padding: 4rem 1.5rem;
+    }
+
+    .why-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .why-section h2 {
+      font-family: var(--serif) !important;
+      font-size: clamp(1.4rem, 2.5vw, 2rem) !important;
+      font-weight: 700 !important;
+      color: var(--white) !important;
+      margin: 0 0 2.5rem !important;
+      text-align: left !important;
+    }
+
+    .why-grid {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+      gap: 2rem !important;
+    }
+
+    .why-grid .product-card {
+      background: transparent !important;
+      border: none !important;
+      border-top: 3px solid var(--yellow) !important;
+      border-radius: 0 !important;
+      padding: 1.25rem 0 0 !important;
+      box-shadow: none !important;
+      transform: none !important;
+      cursor: default !important;
+    }
+
+    .why-grid .product-card:hover {
+      box-shadow: none !important;
+      transform: none !important;
+    }
+
+    .why-grid .product-info h3 {
+      font-size: 1rem !important;
+      font-weight: 700 !important;
+      color: var(--white) !important;
+      margin: 0 0 0.5rem !important;
+    }
+
+    .why-grid .product-info p {
+      font-size: 0.88rem !important;
+      color: #aaa !important;
+      line-height: 1.7 !important;
+      margin: 0 !important;
+    }
+
+    /* ── Payment Band ── */
+    .payment-band {
+      background: var(--yellow);
+      padding: 3.5rem 1.5rem;
+      text-align: center;
+    }
+
+    .payment-band-inner { max-width: 700px; margin: 0 auto; }
+
+    .payment-band h2 {
+      font-family: var(--serif);
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+      font-weight: 700;
+      color: var(--dark);
+      margin: 0 0 0.75rem;
+    }
+
+    .payment-band p {
+      color: var(--mid);
+      font-size: 0.97rem;
+      margin: 0 0 1.75rem;
+      line-height: 1.7;
+    }
+
+    .payment-steps {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+
+    .payment-step {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--dark);
+    }
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      background: var(--dark);
+      color: var(--white);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* ── Footer ── */
+    .site-footer {
+      background: var(--dark);
+      color: #ccc;
+      padding: 4rem 1.5rem 2rem;
+    }
+
+    .footer-inner { max-width: 1400px; margin: 0 auto; }
+
+    .footer-top {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 3rem;
+      padding-bottom: 3rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .footer-brand-name {
+      font-family: var(--serif);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 0.75rem;
+    }
+
+    .footer-desc { font-size: 0.85rem; line-height: 1.75; color: #999; max-width: 280px; }
+
+    .footer-col-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--white);
+      margin-bottom: 1.1rem;
+    }
+
+    .footer-links { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+    .footer-links a { font-size: 0.85rem; color: #999; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--yellow); }
+
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 2rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-copy { font-size: 0.8rem; color: #666; }
+    .pay-chips { display: flex; gap: 0.65rem; }
+    .pay-chip { background: rgba(255,255,255,0.08); color: #ccc; font-size: 0.72rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 4px; }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .hero-content { grid-template-columns: 1fr; }
+      .hero-image { min-height: 260px; }
+      .promo-grid { grid-template-columns: 1fr; }
+      .footer-top { grid-template-columns: 1fr 1fr; gap: 2rem; }
+    }
+
+    @media (max-width: 600px) {
+      .nav-brand span { display: none; }
+      .nav-links li a { padding: 0.4rem 0.55rem !important; font-size: 0.8rem !important; }
+      .hero-text { padding: 2.5rem 1.5rem; }
+      .footer-top { grid-template-columns: 1fr; }
+      .footer-bottom { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
 </head>
 <body>
+
+  <!-- Announcement Bar -->
+  <div class="announce-bar">
+    🚚 Free delivery tracking on all orders &nbsp;·&nbsp; Pay only 30% down payment — <a href="/products.html">Shop Now</a>
+  </div>
+
+  <!-- Nav (original structure preserved) -->
   <nav>
     <div class="nav-container">
       <div class="nav-brand">
-  <img src="/images/logo.png" alt="Momoy's Furniture Logo" class="nav-logo">
-  <span>MOMOY'S Furniture</span>
+        <img src="/images/logo.png" alt="Momoy's Furniture Logo" class="nav-logo">
+        <span>MOMOY'S Furniture</span>
       </div>
       <ul class="nav-links">
         <li><a href="/">Home</a></li>
@@ -27,56 +606,101 @@
     </div>
   </nav>
 
+  <!-- Category Strip -->
+  <div class="cat-strip">
+    <div class="cat-strip-inner">
+      <a href="/products.html?category=sofa"    class="cat-chip"><span class="cat-icon">🛋️</span>Sofas</a>
+      <a href="/products.html?category=bedroom" class="cat-chip"><span class="cat-icon">🛏️</span>Bedroom</a>
+      <a href="/products.html?category=dining"  class="cat-chip"><span class="cat-icon">🍽️</span>Dining</a>
+      <a href="/products.html?category=office"  class="cat-chip"><span class="cat-icon">💼</span>Office</a>
+      <a href="/products.html?category=cabinet" class="cat-chip"><span class="cat-icon">🗄️</span>Cabinets</a>
+      <a href="/products.html?category=table"   class="cat-chip"><span class="cat-icon">🪑</span>Tables & Chairs</a>
+      <a href="/products.html?category=storage" class="cat-chip"><span class="cat-icon">📦</span>Storage</a>
+      <a href="/products.html?category=outdoor" class="cat-chip"><span class="cat-icon">🌿</span>Outdoor</a>
+      <a href="/products.html"                  class="cat-chip"><span class="cat-icon">✨</span>All Products</a>
+    </div>
+  </div>
+
+  <!-- Hero (original structure preserved) -->
   <div class="hero">
-  <div class="hero-content">
-    <div class="hero-text">
-      <h1>Welcome to MOMOY'S Furniture</h1>
-      <p>Quality furniture for your home with flexible payment options</p>
-      <a href="/products.html" class="btn btn-primary">Shop Now</a>
-    </div>
-
-    <div class="hero-image">
-      <img src="/images/couch.png" alt="Furniture Showcase">
-    </div>
-  </div>
-</div>
-
- <section class="featured-section">
-  <h2>Featured Products</h2>
-
-  <div class="masonry-grid">
-    <div class="product-card">
-      <img src="/images/modernsofa.jpg" alt="Sofa">
-      <div class="overlay"><h3>Sofa</h3></div>
-    </div>
-    <div class="product-card">
-      <img src="/images/classictable.jpg" alt="Dining Set">
-      <div class="overlay"><h3>Dining Set</h3></div>
-    </div>
-    <div class="product-card">
-      <img src="/images/couch.png" alt="Bedroom Set">
-      <div class="overlay"><h3>Bedroom Set</h3></div>
-    </div>
-    <div class="product-card">
-      <img src="/images/modernchair.jpg" alt="Office Chair">
-      <div class="overlay"><h3>Office Chair</h3></div>
-    </div>
-    <div class="product-card">
-      <img src="/images/bg2.jpg" alt="Armchair">
-      <div class="overlay"><h3>Armchair</h3></div>
-    </div>
-    <div class="product-card">
-      <img src="/images/hero.jpg" alt="Coffee Table">
-      <div class="overlay"><h3>Coffee Table</h3></div>
+    <div class="hero-content">
+      <div class="hero-text">
+        <span class="hero-tag">Quality Since Day One</span>
+        <h1>Welcome to MOMOY'S Furniture</h1>
+        <p>Quality furniture for your home with flexible payment options</p>
+        <div class="hero-actions">
+          <a href="/products.html" class="btn btn-primary">Shop Now</a>
+          <a href="#featured" class="btn btn-secondary">View Collection</a>
+        </div>
+      </div>
+      <div class="hero-image">
+        <img src="/images/couch.png" alt="Furniture Showcase">
+        <div class="hero-badge">Pay only <strong>30% down</strong><br>Balance on delivery</div>
+      </div>
     </div>
   </div>
-</section>
 
+  <!-- Featured Products (original structure preserved) -->
+  <section class="featured-section" id="featured">
+    <div class="featured-header">
+      <h2>Featured Products</h2>
+      <a href="/products.html" class="section-link">View all →</a>
+    </div>
+    <div class="masonry-grid">
+      <div class="product-card">
+        <img src="/images/modernsofa.jpg" alt="Sofa">
+        <div class="overlay"><h3>Sofa</h3></div>
+      </div>
+      <div class="product-card">
+        <img src="/images/classictable.jpg" alt="Dining Set">
+        <div class="overlay"><h3>Dining Set</h3></div>
+      </div>
+      <div class="product-card">
+        <img src="/images/couch.png" alt="Bedroom Set">
+        <div class="overlay"><h3>Bedroom Set</h3></div>
+      </div>
+      <div class="product-card">
+        <img src="/images/modernchair.jpg" alt="Office Chair">
+        <div class="overlay"><h3>Office Chair</h3></div>
+      </div>
+      <div class="product-card">
+        <img src="/images/bg2.jpg" alt="Armchair">
+        <div class="overlay"><h3>Armchair</h3></div>
+      </div>
+      <div class="product-card">
+        <img src="/images/hero.jpg" alt="Coffee Table">
+        <div class="overlay"><h3>Coffee Table</h3></div>
+      </div>
+    </div>
+  </section>
 
-  <div class="container">
-    <section style="text-align: center; padding: 3rem 0;">
+  <!-- Promo Banners (new) -->
+  <div class="promo-section">
+    <div class="promo-grid">
+      <a href="/products.html?category=bedroom" class="promo-card">
+        <img src="/images/couch.png" alt="Bedroom">
+        <div class="promo-content">
+          <span class="promo-label">Bedroom</span>
+          <h3 class="promo-title">Rest Better,<br>Live Better</h3>
+          <span class="promo-btn">Shop Bedroom →</span>
+        </div>
+      </a>
+      <a href="/products.html?category=dining" class="promo-card">
+        <img src="/images/classictable.jpg" alt="Dining">
+        <div class="promo-content">
+          <span class="promo-label">Dining</span>
+          <h3 class="promo-title">Gather Around<br>the Table</h3>
+          <span class="promo-btn">Shop Dining →</span>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Why Choose Us (original structure preserved) -->
+  <section class="why-section">
+    <div class="why-inner">
       <h2>Why Choose Us?</h2>
-      <div class="product-grid" style="margin-top: 2rem;">
+      <div class="why-grid product-grid">
         <div class="product-card">
           <div class="product-info">
             <h3>🪑 Quality Furniture</h3>
@@ -96,15 +720,72 @@
           </div>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section style="text-align: center; padding: 3rem 0; background: white; border-radius: 10px; margin-top: 2rem;">
-      <h2>Ready to Get Started?</h2>
-      <p style="margin: 1rem 0;">Browse our collection of quality furniture</p>
-      <a href="/products.html" class="btn btn-secondary">View Products</a>
-    </section>
-  </div>
+  <!-- Payment Band (replaces "Ready to Get Started") -->
+  <section class="payment-band">
+    <div class="payment-band-inner">
+      <h2>Simple, Flexible Payment</h2>
+      <p>We believe great furniture should be accessible to everyone. Bring home your dream furniture today with our easy payment scheme.</p>
+      <div class="payment-steps">
+        <div class="payment-step"><span class="step-num">1</span> Choose your furniture</div>
+        <div class="payment-step"><span class="step-num">2</span> Pay 30% down payment</div>
+        <div class="payment-step"><span class="step-num">3</span> Receive &amp; pay balance</div>
+      </div>
+      <a href="/products.html" class="btn btn-primary">Start Shopping</a>
+    </div>
+  </section>
 
+  <!-- Footer (new) -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div>
+          <div class="footer-brand-name">MOMOY'S Furniture</div>
+          <p class="footer-desc">Quality furniture for every Filipino home. Handcrafted pieces built to last, with flexible payment options that fit any budget.</p>
+        </div>
+        <div>
+          <div class="footer-col-title">Shop</div>
+          <ul class="footer-links">
+            <li><a href="/products.html">All Products</a></li>
+            <li><a href="/products.html?category=sofa">Sofas</a></li>
+            <li><a href="/products.html?category=bedroom">Bedroom</a></li>
+            <li><a href="/products.html?category=dining">Dining</a></li>
+            <li><a href="/products.html?category=office">Office</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer-col-title">Account</div>
+          <ul class="footer-links">
+            <li><a href="/orders.html">Track My Order</a></li>
+            <li><a href="/cart.html">My Cart</a></li>
+            <li><a href="/register.html">Create Account</a></li>
+            <li><a href="/login.html">Login</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer-col-title">Help</div>
+          <ul class="footer-links">
+            <li><a href="#">Payment Options</a></li>
+            <li><a href="#">Delivery Info</a></li>
+            <li><a href="#">Return Policy</a></li>
+            <li><a href="#">Contact Us</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span class="footer-copy">© 2026 MOMOY'S Furniture. All rights reserved.</span>
+        <div class="pay-chips">
+          <span class="pay-chip">GCash</span>
+          <span class="pay-chip">Cash</span>
+          <span class="pay-chip">COD</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts (original, unchanged) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
