@@ -213,18 +213,18 @@
         }
 
         grid.innerHTML = featured.map(p => `
-          <a class="fp-card" href="/product-detail.html?id=${p.id}">
+          <div class="fp-card" onclick="window.location.href='/products.html?id=${p.id}'">
             <div class="fp-img-wrap">
               <img src="${p.imageUrl || '/images/modernsofa.jpg'}" alt="${p.name}" onerror="this.src='/images/modernsofa.jpg'">
-              <div class="fp-hotspot">
+              <div class="fp-hotspot" onclick="event.stopPropagation(); window.location.href='/products.html?id=${p.id}'">
                 <div class="fp-tooltip">
                   <span class="fp-tooltip-name">${p.name}</span>
-                  <span class="fp-tooltip-price">₱${Number(p.price).toLocaleString()}</span>
+                  <span class="fp-tooltip-price">&#8369;${Number(p.price).toLocaleString()}</span>
                 </div>
                 <div class="fp-dot"></div>
               </div>
             </div>
-          </a>
+          </div>
         `).join('');
       } catch (e) {
         console.error('Featured products error:', e);
