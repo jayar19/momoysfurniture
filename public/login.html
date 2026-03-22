@@ -291,15 +291,17 @@
     // ── Friendly Firebase error messages ──
     function friendlyError(code) {
       const map = {
-        'auth/user-not-found':       'No account found with that email.',
-        'auth/wrong-password':       'Incorrect password. Please try again.',
-        'auth/invalid-email':        'Please enter a valid email address.',
-        'auth/email-already-in-use': 'An account with this email already exists.',
-        'auth/weak-password':        'Password must be at least 6 characters.',
-        'auth/too-many-requests':    'Too many attempts. Please try again later.',
-        'auth/invalid-credential':   'Invalid email or password.',
+        'auth/user-not-found':        'No account found with that email.',
+        'auth/wrong-password':        'Incorrect password. Please try again.',
+        'auth/invalid-email':         'Please enter a valid email address.',
+        'auth/email-already-in-use':  'An account with this email already exists.',
+        'auth/weak-password':         'Password must be at least 6 characters.',
+        'auth/too-many-requests':     'Too many attempts. Please try again later.',
+        // Firebase v9 compat consolidates wrong-password + user-not-found into this
+        'auth/invalid-credential':    'Incorrect email or password. Please try again.',
+        'auth/invalid-login-credentials': 'Incorrect email or password. Please try again.',
       };
-      return map[code] || 'Something went wrong. Please try again.';
+      return map[code] || `Something went wrong (${code}). Please try again.`;
     }
 
     // ── Nav scroll hide ──
