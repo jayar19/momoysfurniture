@@ -424,7 +424,7 @@ nav.nav-hidden {
 
 .section-link:hover { color: var(--muted); }
 
-/* ── Featured Products Grid (IKEA-style hover badge) ── */
+/* ── Featured Products Grid (IKEA-style hotspot dot) ── */
 .featured-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -458,7 +458,7 @@ nav.nav-hidden {
 .fp-img-wrap {
   position: relative;
   aspect-ratio: 4/3;
-  overflow: hidden;
+  overflow: visible;
   background: var(--light);
 }
 
@@ -467,61 +467,119 @@ nav.nav-hidden {
   height: 100%;
   object-fit: cover;
   display: block;
+  border-radius: 8px 8px 0 0;
   transition: transform 0.45s ease;
 }
 
 .fp-card:hover .fp-img-wrap img {
-  transform: scale(1.06);
+  transform: scale(1.03);
 }
 
-/* Circle badge — hidden by default, appears on hover */
-.fp-badge {
+/* ── Hotspot dot — always visible ── */
+.fp-hotspot {
   position: absolute;
-  bottom: 1rem;
+  bottom: 1.2rem;
   left: 50%;
-  transform: translateX(-50%) scale(0.7);
-  background: var(--yellow);
-  color: var(--dark);
+  transform: translateX(-50%);
+  z-index: 10;
+  cursor: pointer;
+}
+
+/* Outer pulsing ring */
+.fp-hotspot::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
   border-radius: 50%;
-  width: 110px;
-  height: 110px;
+  border: 2px solid rgba(255, 218, 26, 0.6);
+  animation: hotspot-pulse 2s ease-in-out infinite;
+}
+
+@keyframes hotspot-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50%       { transform: scale(1.3); opacity: 0; }
+}
+
+/* The dot itself */
+.fp-dot {
+  width: 28px;
+  height: 28px;
+  background: var(--yellow);
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
+  transition: transform 0.2s;
+  position: relative;
+  z-index: 2;
+}
+
+.fp-dot::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: var(--dark);
+  border-radius: 50%;
+}
+
+.fp-hotspot:hover .fp-dot {
+  transform: scale(1.15);
+}
+
+/* ── Tooltip bubble — revealed on dot hover ── */
+.fp-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  background: var(--yellow);
+  color: var(--dark);
+  border-radius: 999px;
+  padding: 0.5rem 1.1rem;
+  white-space: nowrap;
   text-align: center;
-  padding: 0.5rem;
   opacity: 0;
-  transition: opacity 0.3s ease, transform 0.3s ease;
   pointer-events: none;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+  min-width: 120px;
 }
 
-.fp-card:hover .fp-badge {
-  opacity: 1;
-  transform: translateX(-50%) scale(1);
+/* Arrow pointing down */
+.fp-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--yellow);
 }
 
-.fp-badge-name {
-  font-size: 0.72rem;
-  font-weight: 700;
-  line-height: 1.2;
-  margin-bottom: 0.2rem;
-  display: block;
-}
-
-.fp-badge-price {
+.fp-tooltip-name {
   font-size: 0.78rem;
   font-weight: 700;
   display: block;
+  line-height: 1.3;
+}
+
+.fp-tooltip-price {
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: block;
+  margin-top: 0.1rem;
+}
+
+.fp-hotspot:hover .fp-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .featured-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-  .fp-badge { width: 90px; height: 90px; }
-  .fp-badge-name { font-size: 0.65rem; }
-  .fp-badge-price { font-size: 0.7rem; }
 }
 
 @media (max-width: 480px) {

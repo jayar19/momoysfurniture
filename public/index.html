@@ -102,19 +102,19 @@
       <div class="why-grid product-grid">
         <div class="product-card">
           <div class="product-info">
-            <h3>🪑 Quality Furniture</h3>
+            <h3>Quality Furniture</h3>
             <p>Handpicked furniture pieces that combine style and durability for your home.</p>
           </div>
         </div>
         <div class="product-card">
           <div class="product-info">
-            <h3>💰 Flexible Payment</h3>
+            <h3>Flexible Payment</h3>
             <p>Pay only 30% down payment and settle the balance upon delivery.</p>
           </div>
         </div>
         <div class="product-card">
           <div class="product-info">
-            <h3>🚚 Track Delivery</h3>
+            <h3>Track Delivery</h3>
             <p>Real-time delivery tracking with Google Maps integration.</p>
           </div>
         </div>
@@ -216,9 +216,12 @@
           <a class="fp-card" href="/product-detail.html?id=${p.id}">
             <div class="fp-img-wrap">
               <img src="${p.imageUrl || '/images/modernsofa.jpg'}" alt="${p.name}" onerror="this.src='/images/modernsofa.jpg'">
-              <div class="fp-badge">
-                <span class="fp-badge-name">${p.name}</span>
-                <span class="fp-badge-price">₱${Number(p.price).toLocaleString()}</span>
+              <div class="fp-hotspot">
+                <div class="fp-tooltip">
+                  <span class="fp-tooltip-name">${p.name}</span>
+                  <span class="fp-tooltip-price">₱${Number(p.price).toLocaleString()}</span>
+                </div>
+                <div class="fp-dot"></div>
               </div>
             </div>
           </a>
