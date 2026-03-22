@@ -61,37 +61,15 @@
     </div>
   </div>
 
-  <!-- Featured Products (original structure preserved) -->
+  <!-- Featured Products -->
   <section class="featured-section" id="featured">
     <div class="featured-header">
       <h2>Featured Products</h2>
       <a href="/products.html" class="section-link">View all →</a>
     </div>
-    <div class="masonry-grid">
-      <div class="product-card">
-        <img src="/images/modernsofa.jpg" alt="Sofa">
-        <div class="overlay"><h3>Sofa</h3></div>
-      </div>
-      <div class="product-card">
-        <img src="/images/classictable.jpg" alt="Dining Set">
-        <div class="overlay"><h3>Dining Set</h3></div>
-      </div>
-      <div class="product-card">
-        <img src="/images/couch.png" alt="Bedroom Set">
-        <div class="overlay"><h3>Bedroom Set</h3></div>
-      </div>
-      <div class="product-card">
-        <img src="/images/modernchair.jpg" alt="Office Chair">
-        <div class="overlay"><h3>Office Chair</h3></div>
-      </div>
-      <div class="product-card">
-        <img src="/images/bg2.jpg" alt="Armchair">
-        <div class="overlay"><h3>Armchair</h3></div>
-      </div>
-      <div class="product-card">
-        <img src="/images/hero.jpg" alt="Coffee Table">
-        <div class="overlay"><h3>Coffee Table</h3></div>
-      </div>
+    <div class="featured-grid" id="featured-grid">
+      <!-- Dynamically populated by JS -->
+      <div class="featured-loading">Loading products...</div>
     </div>
   </section>
 
@@ -124,19 +102,19 @@
       <div class="why-grid product-grid">
         <div class="product-card">
           <div class="product-info">
-            <h3>Quality Furniture</h3>
+            <h3>🪑 Quality Furniture</h3>
             <p>Handpicked furniture pieces that combine style and durability for your home.</p>
           </div>
         </div>
         <div class="product-card">
           <div class="product-info">
-            <h3>Flexible Payment</h3>
+            <h3>💰 Flexible Payment</h3>
             <p>Pay only 30% down payment and settle the balance upon delivery.</p>
           </div>
         </div>
         <div class="product-card">
           <div class="product-info">
-            <h3>Track Delivery</h3>
+            <h3>🚚 Track Delivery</h3>
             <p>Real-time delivery tracking with Google Maps integration.</p>
           </div>
         </div>
@@ -214,6 +192,53 @@
   <script src="/js/auth.js"></script>
   <script src="/js/products.js"></script>
   <script src="/js/config.js"></script>
+
+  <script>
+    // Load featured products from API
+    async function loadFeaturedProducts() {
+      const grid = document.getElementById('featured-grid');
+      if (!grid) return;
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/products`);
+        if (!res.ok) throw new Error('Failed to fetch');
+        const products = await res.json();
+
+        // Show up to 6 products
+        const featured = products.slice(0, 6);
+
+        if (featured.length === 0) {
+          grid.innerHTML = '<p style="color:#999;text-align:center;">No products available.</p>';
+          return;
+        }
+
+        grid.innerHTML = featured.map(p => `
+          <a class="fp-card" href="/product-detail.html?id=${p.id}">
+            <div class="fp-img-wrap">
+              <img src="${p.imageUrl || '/images/modernsofa.jpg'}" alt="${p.name}" onerror="this.src='/images/modernsofa.jpg'">
+              <div class="fp-badge">
+                <span class="fp-badge-name">${p.name}</span>
+                <span class="fp-badge-price">₱${Number(p.price).toLocaleString()}</span>
+              </div>
+            </div>
+          </a>
+        `).join('');
+      } catch (e) {
+        console.error('Featured products error:', e);
+        grid.innerHTML = '<p style="color:#999;text-align:center;">Could not load products.</p>';
+      }
+    }
+
+    // Run after config.js sets API_BASE_URL
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof API_BASE_URL !== 'undefined') {
+        loadFeaturedProducts();
+      } else {
+        // Wait a tick for config.js to load
+        setTimeout(loadFeaturedProducts, 100);
+      }
+    });
+  </script>
 
   <script>
     // Hide nav on scroll down, show on scroll up
