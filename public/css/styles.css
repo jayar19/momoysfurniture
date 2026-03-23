@@ -155,7 +155,7 @@ nav.nav-hidden {
   max-width: 1400px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   padding: 0 1.5rem;
 }
 
@@ -196,7 +196,7 @@ nav.nav-hidden {
 /* Responsive category strip */
 @media (max-width: 1100px) {
   .cat-strip-inner {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
   .cat-chip .cat-icon { width: 70px; height: 70px; }
 }
