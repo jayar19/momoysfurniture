@@ -3,7 +3,7 @@ async function registerUser(email, password, fullName) {
   try {
     const userCredential = await auth.createUserWithEmailAndPassword(email, password);
     const user = userCredential.user;
-    
+
     // Create user document in Firestore
     await db.collection('users').doc(user.uid).set({
       email: email,
@@ -11,10 +11,10 @@ async function registerUser(email, password, fullName) {
       role: 'user',
       createdAt: new Date().toISOString()
     });
-    
+
     return { success: true, user };
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: friendlyAuthError(error.code) };
   }
 }
 
@@ -24,7 +24,7 @@ async function loginUser(email, password) {
     const userCredential = await auth.signInWithEmailAndPassword(email, password);
     return { success: true, user: userCredential.user };
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: friendlyAuthError(error.code) };
   }
 }
 
@@ -43,7 +43,7 @@ async function logoutUser() {
 async function isAdmin() {
   const user = auth.currentUser;
   if (!user) return false;
-  
+
   try {
     const userDoc = await db.collection('users').doc(user.uid).get();
     return userDoc.exists && userDoc.data().role === 'admin';
@@ -56,12 +56,12 @@ async function isAdmin() {
 // Protect admin pages
 async function protectAdminPage() {
   const user = auth.currentUser;
-  
+
   if (!user) {
     window.location.href = '/login.html';
     return;
   }
-  
+
   const admin = await isAdmin();
   if (!admin) {
     alert('Access denied. Admin only.');
@@ -69,30 +69,66 @@ async function protectAdminPage() {
   }
 }
 
+// Friendly Firebase error messages
+function friendlyAuthError(code) {
+  const map = {
+    'auth/user-not-found':             'No account found with that email.',
+    'auth/wrong-password':             'Incorrect password. Please try again.',
+    'auth/invalid-email':              'Please enter a valid email address.',
+    'auth/email-already-in-use':       'An account with this email already exists.',
+    'auth/weak-password':              'Password must be at least 6 characters.',
+    'auth/too-many-requests':          'Too many attempts. Please try again later.',
+    'auth/invalid-credential':         'Incorrect email or password. Please try again.',
+    'auth/invalid-login-credentials':  'Incorrect email or password. Please try again.',
+    'auth/network-request-failed':     'Network error. Please check your connection.',
+    'auth/user-disabled':              'This account has been disabled.',
+  };
+  return map[code] || 'Something went wrong. Please try again.';
+}
+
+// Show message helper (works for both old message div and new auth-message div)
+function showFormMessage(msg, type) {
+  // New login.html style
+  const authMsg = document.getElementById('auth-message');
+  if (authMsg) {
+    authMsg.textContent = msg;
+    authMsg.className = `auth-message ${type === 'success' ? 'success' : 'error'}`;
+    authMsg.style.display = 'block';
+    return;
+  }
+  // Old style fallback
+  const messageDiv = document.getElementById('message');
+  if (messageDiv) {
+    messageDiv.className = `alert alert-${type === 'success' ? 'success' : 'error'}`;
+    messageDiv.textContent = msg;
+    messageDiv.style.display = 'block';
+  }
+}
+
 // Register form handler
 if (document.getElementById('register-form')) {
   document.getElementById('register-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const email = document.getElementById('email').value;
+
+    const email    = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
-    const fullName = document.getElementById('fullName').value;
-    const messageDiv = document.getElementById('message');
-    
+    const fullName = document.getElementById('fullName').value.trim();
+
+    const btn = e.target.querySelector('button[type="submit"]') ||
+                e.target.querySelector('.auth-submit') ||
+                e.target.querySelector('.btn');
+    const originalText = btn ? btn.textContent : '';
+    if (btn) { btn.textContent = 'Creating account...'; btn.disabled = true; }
+
     const result = await registerUser(email, password, fullName);
-    
+
     if (result.success) {
-      messageDiv.className = 'alert alert-success';
-      messageDiv.textContent = 'Registration successful! Redirecting...';
-      setTimeout(() => {
-        window.location.href = '/products.html';
-      }, 2000);
+      showFormMessage('Account created! Redirecting...', 'success');
+      setTimeout(() => window.location.href = '/products.html', 1500);
     } else {
-      messageDiv.className = 'alert alert-error';
-      messageDiv.textContent = result.error;
+      showFormMessage(result.error, 'error');
+      if (btn) { btn.textContent = originalText; btn.disabled = false; }
     }
-    
-    messageDiv.style.display = 'block';
   });
 }
 
@@ -100,28 +136,30 @@ if (document.getElementById('register-form')) {
 if (document.getElementById('login-form')) {
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const email = document.getElementById('email').value;
+
+    const email    = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
-    const messageDiv = document.getElementById('message');
-    
+
+    const btn = e.target.querySelector('button[type="submit"]') ||
+                e.target.querySelector('.auth-submit') ||
+                e.target.querySelector('.btn');
+    const originalText = btn ? btn.textContent : '';
+    if (btn) { btn.textContent = 'Logging in...'; btn.disabled = true; }
+
     const result = await loginUser(email, password);
-    
+
     if (result.success) {
-      messageDiv.className = 'alert alert-success';
-      messageDiv.textContent = 'Login successful! Redirecting...';
-      
-      // Check if admin
+      showFormMessage('Login successful! Redirecting...', 'success');
+
+      // Check role and redirect accordingly
       const admin = await isAdmin();
       setTimeout(() => {
         window.location.href = admin ? '/admin/dashboard.html' : '/products.html';
       }, 1000);
     } else {
-      messageDiv.className = 'alert alert-error';
-      messageDiv.textContent = result.error;
+      showFormMessage(result.error, 'error');
+      if (btn) { btn.textContent = originalText; btn.disabled = false; }
     }
-    
-    messageDiv.style.display = 'block';
   });
 }
 
@@ -133,3 +171,20 @@ if (logoutBtn) {
     await logoutUser();
   });
 }
+
+// Show/hide nav links based on auth state
+auth.onAuthStateChanged((user) => {
+  const authRequired = document.querySelectorAll('.auth-required');
+  const guestOnly    = document.querySelectorAll('.guest-only');
+
+  if (user) {
+    authRequired.forEach(el => el.style.display = '');
+    guestOnly.forEach(el => el.style.display = 'none');
+  } else {
+    authRequired.forEach(el => el.style.display = 'none');
+    guestOnly.forEach(el => el.style.display = '');
+  }
+
+  // Update cart count on auth change
+  if (typeof updateCartCount === 'function') updateCartCount();
+});
