@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>AR Viewer - MOMOY'S Furniture</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* AR scene takes full screen */
+    #ar-scene {
+      width: 100vw;
+      height: 100vh;
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    /* ── UI overlay ── */
+    #ar-ui {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    /* Top bar */
+    #ar-topbar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+      pointer-events: all;
+    }
+
+    #ar-back {
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+      border: none;
+      color: #fff;
+      border-radius: 999px;
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    #ar-product-label {
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      border-radius: 999px;
+      padding: 0.4rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Marker hint card */
+    #marker-hint {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 16px;
+      padding: 1.25rem 1.5rem;
+      color: #fff;
+      text-align: center;
+      max-width: 320px;
+      width: calc(100% - 2rem);
+      pointer-events: all;
+      transition: opacity 0.4s;
+    }
+
+    #marker-hint h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: #FFDA1A;
+    }
+
+    #marker-hint p {
+      font-size: 0.8rem;
+      color: #ccc;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    #show-marker-btn {
+      background: #FFDA1A;
+      color: #111;
+      border: none;
+      border-radius: 999px;
+      padding: 0.6rem 1.25rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s;
+    }
+
+    #show-marker-btn:hover { background: #ffe94d; }
+
+    /* Tracking status */
+    #tracking-status {
+      position: absolute;
+      top: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      border-radius: 999px;
+      padding: 0.4rem 1rem;
+      font-size: 0.78rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: opacity 0.3s;
+    }
+
+    #tracking-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #e74c3c;
+      flex-shrink: 0;
+    }
+
+    #tracking-dot.found { background: #27ae60; animation: pulse-green 1.5s infinite; }
+
+    @keyframes pulse-green {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    /* Controls bar */
+    #ar-controls {
+      position: absolute;
+      bottom: 2rem;
+      right: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      pointer-events: all;
+    }
+
+    .ar-ctrl-btn {
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff;
+      border-radius: 12px;
+      width: 48px;
+      height: 48px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .ar-ctrl-btn:hover { background: rgba(255,218,26,0.3); }
+    .ar-ctrl-btn.active { background: rgba(255,218,26,0.5); border-color: #FFDA1A; }
+
+    /* Marker modal */
+    #marker-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    #marker-modal.open { display: flex; }
+
+    .marker-modal-box {
+      background: #fff;
+      border-radius: 16px;
+      padding: 1.75rem;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .marker-modal-box h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: #111;
+    }
+
+    .marker-modal-box p {
+      font-size: 0.83rem;
+      color: #666;
+      margin-bottom: 1.25rem;
+      line-height: 1.6;
+    }
+
+    #hiro-marker-img {
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 1.25rem;
+      display: block;
+      border: 8px solid #fff;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    #close-marker-modal {
+      background: #111;
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 0.65rem 1.5rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    /* Permission denied screen */
+    #permission-denied {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #111;
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      color: #fff;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    #permission-denied h2 { font-size: 1.3rem; margin-bottom: 0.75rem; }
+    #permission-denied p  { font-size: 0.9rem; color: #999; line-height: 1.7; margin-bottom: 1.5rem; }
+
+    #retry-camera {
+      background: #FFDA1A;
+      color: #111;
+      border: none;
+      border-radius: 999px;
+      padding: 0.75rem 1.75rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── AR.js scene ── -->
+  <a-scene
+    id="ar-scene"
+    embedded
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    renderer="logarithmicDepthBuffer: true; antialias: true;"
+    vr-mode-ui="enabled: false"
+    gesture-detector
+  >
+    <!-- Hiro marker — the standard AR.js marker -->
+    <a-marker
+      id="hiro-marker"
+      preset="hiro"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5"
+      emitevents="true"
+    >
+      <!-- 3D model on the marker -->
+      <a-entity
+        id="ar-model-entity"
+        position="0 0 0"
+        rotation="0 0 0"
+        scale="0.5 0.5 0.5"
+        gltf-model=""
+      ></a-entity>
+
+      <!-- Fallback box when no model available -->
+      <a-entity id="ar-fallback-box" visible="false">
+        <!-- Furniture-like placeholder: a sofa shape -->
+        <!-- Seat -->
+        <a-box position="0 0.1 0"    width="1.4" height="0.2" depth="0.7" color="#8B6914" opacity="0.95"></a-box>
+        <!-- Back -->
+        <a-box position="0 0.35 -0.25" width="1.4" height="0.5" depth="0.2" color="#8B6914" opacity="0.95"></a-box>
+        <!-- Left arm -->
+        <a-box position="-0.65 0.25 0" width="0.2" height="0.3" depth="0.7" color="#7a5c10" opacity="0.95"></a-box>
+        <!-- Right arm -->
+        <a-box position="0.65 0.25 0"  width="0.2" height="0.3" depth="0.7" color="#7a5c10" opacity="0.95"></a-box>
+        <!-- Legs -->
+        <a-cylinder position="-0.55 -0.08 0.25"  radius="0.04" height="0.18" color="#5a3e0a"></a-cylinder>
+        <a-cylinder position="0.55 -0.08 0.25"   radius="0.04" height="0.18" color="#5a3e0a"></a-cylinder>
+        <a-cylinder position="-0.55 -0.08 -0.25" radius="0.04" height="0.18" color="#5a3e0a"></a-cylinder>
+        <a-cylinder position="0.55 -0.08 -0.25"  radius="0.04" height="0.18" color="#5a3e0a"></a-cylinder>
+        <!-- Marker ring -->
+        <a-ring position="0 0.01 0" rotation="-90 0 0" radius-inner="0.75" radius-outer="0.8" color="#FFDA1A" opacity="0.6"></a-ring>
+      </a-entity>
+    </a-marker>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <!-- ── UI Overlay ── -->
+  <div id="ar-ui">
+
+    <!-- Top bar -->
+    <div id="ar-topbar">
+      <button id="ar-back" onclick="history.back()">
+        ← Back
+      </button>
+      <div id="ar-product-label">Loading...</div>
+    </div>
+
+    <!-- Tracking status -->
+    <div id="tracking-status">
+      <div id="tracking-dot"></div>
+      <span id="tracking-text">Point camera at Hiro marker</span>
+    </div>
+
+    <!-- Marker hint (shown initially) -->
+    <div id="marker-hint">
+      <h3>📍 How to use Marker AR</h3>
+      <p>Print or display the <strong>Hiro marker</strong> on a flat surface. Point your camera at it and the 3D model will appear on top of it.</p>
+      <button id="show-marker-btn" onclick="openMarkerModal()">Show Hiro Marker</button>
+    </div>
+
+    <!-- Right side controls -->
+    <div id="ar-controls">
+      <button class="ar-ctrl-btn" id="btn-rotate" title="Toggle auto-rotate" onclick="toggleRotate()">🔄</button>
+      <button class="ar-ctrl-btn" id="btn-scale-up" title="Scale up" onclick="scaleModel(1.2)">＋</button>
+      <button class="ar-ctrl-btn" id="btn-scale-down" title="Scale down" onclick="scaleModel(0.8)">－</button>
+      <button class="ar-ctrl-btn" id="btn-marker" title="Show marker" onclick="openMarkerModal()">🎯</button>
+    </div>
+
+  </div>
+
+  <!-- ── Marker Modal ── -->
+  <div id="marker-modal">
+    <div class="marker-modal-box">
+      <h3>🎯 Hiro Marker</h3>
+      <p>Print this marker or display it on another screen. Place it on a flat surface and point your camera at it.</p>
+      <!-- Hiro marker as inline SVG-based image (official AR.js Hiro pattern) -->
+      <img
+        id="hiro-marker-img"
+        src="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png"
+        alt="Hiro AR Marker"
+        onerror="this.src='https://jeromeetienne.github.io/AR.js/data/images/hiro.png'"
+      >
+      <p style="font-size:0.75rem; color:#999; margin-bottom:1rem;">Keep the marker flat, well-lit, and fully visible to the camera for best tracking.</p>
+      <button id="close-marker-modal" onclick="closeMarkerModal()">Got it — Start Tracking</button>
+    </div>
+  </div>
+
+  <!-- Permission denied screen -->
+  <div id="permission-denied">
+    <div style="font-size:3rem; margin-bottom:1rem;">📷</div>
+    <h2>Camera Access Required</h2>
+    <p>Marker AR needs your camera to track the Hiro marker.<br>Please allow camera access and try again.</p>
+    <button id="retry-camera" onclick="location.reload()">Allow Camera & Retry</button>
+  </div>
+
+  <!-- ── Scripts ── -->
+  <!-- A-Frame -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.2/aframe.min.js"></script>
+  <!-- AR.js for A-Frame -->
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+
+  <script>
+    // ── Get product info from URL params ──
+    const params      = new URLSearchParams(window.location.search);
+    const productName = params.get('name')     || 'Furniture';
+    const modelUrl    = params.get('model')    || '';
+    const imageUrl    = params.get('image')    || '';
+
+    document.getElementById('ar-product-label').textContent = productName;
+
+    // ── Setup model or fallback ──
+    const modelEntity   = document.getElementById('ar-model-entity');
+    const fallbackBox   = document.getElementById('ar-fallback-box');
+
+    if (modelUrl && modelUrl.trim() !== '') {
+      modelEntity.setAttribute('gltf-model', modelUrl);
+      fallbackBox.setAttribute('visible', 'false');
+    } else {
+      modelEntity.setAttribute('visible', 'false');
+      fallbackBox.setAttribute('visible', 'true');
+    }
+
+    // ── Marker tracking events ──
+    const marker      = document.getElementById('hiro-marker');
+    const dot         = document.getElementById('tracking-dot');
+    const trackingTxt = document.getElementById('tracking-text');
+    const hint        = document.getElementById('marker-hint');
+
+    marker.addEventListener('markerFound', () => {
+      dot.classList.add('found');
+      trackingTxt.textContent = 'Marker detected — tracking active';
+      hint.style.opacity = '0';
+      hint.style.pointerEvents = 'none';
+    });
+
+    marker.addEventListener('markerLost', () => {
+      dot.classList.remove('found');
+      trackingTxt.textContent = 'Marker lost — point camera at Hiro marker';
+      hint.style.opacity = '1';
+      hint.style.pointerEvents = 'all';
+    });
+
+    // ── Scale control ──
+    let currentScale = 0.5;
+
+    function scaleModel(factor) {
+      currentScale = Math.min(Math.max(currentScale * factor, 0.05), 3);
+      const s = currentScale;
+      if (modelUrl) {
+        modelEntity.setAttribute('scale', `${s} ${s} ${s}`);
+      } else {
+        fallbackBox.setAttribute('scale', `${s} ${s} ${s}`);
+      }
+    }
+
+    // ── Auto-rotate toggle ──
+    let rotating = false;
+    let rotInterval = null;
+    let rotY = 0;
+
+    function toggleRotate() {
+      rotating = !rotating;
+      document.getElementById('btn-rotate').classList.toggle('active', rotating);
+
+      if (rotating) {
+        rotInterval = setInterval(() => {
+          rotY = (rotY + 1) % 360;
+          const target = modelUrl ? modelEntity : fallbackBox;
+          target.setAttribute('rotation', `0 ${rotY} 0`);
+        }, 16);
+      } else {
+        clearInterval(rotInterval);
+      }
+    }
+
+    // ── Marker modal ──
+    function openMarkerModal() {
+      document.getElementById('marker-modal').classList.add('open');
+    }
+
+    function closeMarkerModal() {
+      document.getElementById('marker-modal').classList.remove('open');
+    }
+
+    // ── Camera permission check ──
+    navigator.mediaDevices?.getUserMedia({ video: true })
+      .catch(() => {
+        document.getElementById('permission-denied').style.display = 'flex';
+      });
+
+    // ── Hide hint after 8 seconds ──
+    setTimeout(() => {
+      const h = document.getElementById('marker-hint');
+      if (h && dot && !dot.classList.contains('found')) {
+        // keep it visible — user still hasn't found marker
+      }
+    }, 8000);
+  </script>
+</body>
+</html>

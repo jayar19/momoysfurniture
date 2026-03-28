@@ -101,19 +101,19 @@
       <div class="why-grid product-grid">
         <div class="product-card">
           <div class="product-info">
-            <h3>Quality Furniture</h3>
+            <h3>🪑 Quality Furniture</h3>
             <p>Handpicked furniture pieces that combine style and durability for your home.</p>
           </div>
         </div>
         <div class="product-card">
           <div class="product-info">
-            <h3>Flexible Payment</h3>
+            <h3>💰 Flexible Payment</h3>
             <p>Pay only 30% down payment and settle the balance upon delivery.</p>
           </div>
         </div>
         <div class="product-card">
           <div class="product-info">
-            <h3>Track Delivery</h3>
+            <h3>🚚 Track Delivery</h3>
             <p>Real-time delivery tracking with Google Maps integration.</p>
           </div>
         </div>
@@ -306,7 +306,18 @@
         <span style="font-size:0.75rem; color:#666; display:flex; align-items:center; gap:0.4rem;">🖱️ Drag to rotate</span>
         <span style="font-size:0.75rem; color:#666; display:flex; align-items:center; gap:0.4rem;">🔍 Scroll to zoom</span>
         <span style="font-size:0.75rem; color:#666; display:flex; align-items:center; gap:0.4rem;">✋ Two fingers to pan</span>
-        <span style="font-size:0.75rem; color:#FFDA1A; display:flex; align-items:center; gap:0.4rem;" id="ar-mobile-hint" style="display:none;">📱 Tap "Place in Room" for AR</span>
+        <span style="font-size:0.75rem; color:#FFDA1A; display:flex; align-items:center; gap:0.4rem;" id="ar-mobile-hint">📱 Tap "Place in Room" for AR</span>
+      </div>
+
+      <!-- Marker AR button -->
+      <div style="padding:1rem 1.5rem; background:#0d0d0d; border-top:1px solid #222; display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.78rem; font-weight:700; color:#fff; margin-bottom:0.2rem;">🎯 Marker AR Mode</div>
+          <div style="font-size:0.72rem; color:#666; line-height:1.4;">Print or display the Hiro marker — the 3D model locks onto it and tracks wherever you move it.</div>
+        </div>
+        <button id="open-marker-ar-btn" onclick="openMarkerAR()" style="background:#FFDA1A; color:#111; border:none; border-radius:999px; padding:0.6rem 1.25rem; font-size:0.82rem; font-weight:700; cursor:pointer; white-space:nowrap; flex-shrink:0; transition:background 0.2s;">
+          Launch Marker AR →
+        </button>
       </div>
     </div>
   </div>
@@ -351,6 +362,15 @@
       document.body.style.overflow = '';
       // Stop the model from loading/animating when closed
       viewer.removeAttribute('src');
+    }
+
+    // Open dedicated marker AR page
+    function openMarkerAR() {
+      const name  = document.getElementById('ar-product-name').textContent || '';
+      const model = document.getElementById('ar-model-viewer').getAttribute('src') || '';
+      const poster = document.getElementById('ar-model-viewer').getAttribute('poster') || '';
+      const params = new URLSearchParams({ name, model, image: poster });
+      window.open(`/ar-viewer.html?${params.toString()}`, '_blank');
     }
 
     // Close on backdrop click
