@@ -10,6 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Google model-viewer for AR/3D -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
 </head>
 <body>
 
@@ -99,19 +101,19 @@
       <div class="why-grid product-grid">
         <div class="product-card">
           <div class="product-info">
-            <h3>🪑 Quality Furniture</h3>
+            <h3>Quality Furniture</h3>
             <p>Handpicked furniture pieces that combine style and durability for your home.</p>
           </div>
         </div>
         <div class="product-card">
           <div class="product-info">
-            <h3>💰 Flexible Payment</h3>
+            <h3>Flexible Payment</h3>
             <p>Pay only 30% down payment and settle the balance upon delivery.</p>
           </div>
         </div>
         <div class="product-card">
           <div class="product-info">
-            <h3>🚚 Track Delivery</h3>
+            <h3>Track Delivery</h3>
             <p>Real-time delivery tracking with Google Maps integration.</p>
           </div>
         </div>
@@ -220,6 +222,14 @@
                 </div>
                 <div class="fp-dot"></div>
               </div>
+              <button class="fp-ar-btn" onclick="event.stopPropagation(); openARViewer('${p.id}', '${p.name.replace(/'/g,"\\'")}', '${p.modelUrl || ''}', '${p.imageUrl || '/images/modernsofa.jpg'}')" title="View in AR / 3D">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                  <line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+                View in 3D / AR
+              </button>
             </div>
           </div>
         `).join('');
@@ -237,6 +247,120 @@
         // Wait a tick for config.js to load
         setTimeout(loadFeaturedProducts, 100);
       }
+    });
+  </script>
+
+  <!-- AR Viewer Modal -->
+  <div id="ar-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:3000; align-items:center; justify-content:center; padding:1rem;">
+    <div style="background:#1a1a1a; border-radius:16px; width:100%; max-width:700px; overflow:hidden; box-shadow:0 24px 64px rgba(0,0,0,0.6);">
+
+      <!-- Header -->
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:1.1rem 1.5rem; background:#111; border-bottom:1px solid #333;">
+        <div>
+          <div style="font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; color:#888; margin-bottom:0.2rem;">3D Preview & AR</div>
+          <div id="ar-product-name" style="font-family:var(--serif); font-size:1.1rem; color:#fff; font-weight:700;"></div>
+        </div>
+        <button onclick="closeARViewer()" style="background:rgba(255,255,255,0.1); border:none; color:#fff; width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:1.3rem; display:flex; align-items:center; justify-content:center;">&times;</button>
+      </div>
+
+      <!-- model-viewer -->
+      <div style="position:relative; background:#222;">
+        <model-viewer
+          id="ar-model-viewer"
+          style="width:100%; height:420px; background:#222;"
+          camera-controls
+          auto-rotate
+          auto-rotate-delay="1000"
+          rotation-per-second="30deg"
+          shadow-intensity="1"
+          shadow-softness="0.8"
+          environment-image="neutral"
+          exposure="1"
+          ar
+          ar-modes="webxr scene-viewer quick-look"
+          ar-scale="auto"
+          ar-placement="floor"
+          loading="eager"
+          reveal="auto"
+        >
+          <!-- AR button slot -->
+          <button slot="ar-button" id="ar-launch-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            Place in Your Room
+          </button>
+
+          <!-- Loading poster -->
+          <div slot="progress-bar" style="display:none;"></div>
+        </model-viewer>
+
+        <!-- No-model fallback (shown when no .glb exists) -->
+        <div id="ar-no-model" style="display:none; position:absolute; inset:0; flex-direction:column; align-items:center; justify-content:center; background:#222; color:#888; text-align:center; padding:2rem;">
+          <div style="font-size:3rem; margin-bottom:1rem;">📦</div>
+          <div style="font-size:1rem; font-weight:600; color:#ccc; margin-bottom:0.5rem;">3D Model Coming Soon</div>
+          <div style="font-size:0.85rem; line-height:1.6;">A 3D model for this product hasn't been uploaded yet.<br>Check back soon or contact us for a virtual consultation.</div>
+        </div>
+      </div>
+
+      <!-- Controls info bar -->
+      <div style="display:flex; justify-content:center; gap:2rem; padding:0.9rem 1.5rem; background:#111; border-top:1px solid #2a2a2a; flex-wrap:wrap;">
+        <span style="font-size:0.75rem; color:#666; display:flex; align-items:center; gap:0.4rem;">🖱️ Drag to rotate</span>
+        <span style="font-size:0.75rem; color:#666; display:flex; align-items:center; gap:0.4rem;">🔍 Scroll to zoom</span>
+        <span style="font-size:0.75rem; color:#666; display:flex; align-items:center; gap:0.4rem;">✋ Two fingers to pan</span>
+        <span style="font-size:0.75rem; color:#FFDA1A; display:flex; align-items:center; gap:0.4rem;" id="ar-mobile-hint" style="display:none;">📱 Tap "Place in Room" for AR</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Placeholder .glb model URL (a simple chair from Google's model-viewer samples)
+    const PLACEHOLDER_MODEL = 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
+
+    function openARViewer(productId, productName, modelUrl, imageUrl) {
+      const modal    = document.getElementById('ar-modal');
+      const viewer   = document.getElementById('ar-model-viewer');
+      const noModel  = document.getElementById('ar-no-model');
+      const nameEl   = document.getElementById('ar-product-name');
+      const mobileHint = document.getElementById('ar-mobile-hint');
+
+      nameEl.textContent = productName;
+
+      // Use product's modelUrl, fall back to placeholder
+      const src = modelUrl && modelUrl.trim() !== '' ? modelUrl : PLACEHOLDER_MODEL;
+
+      viewer.setAttribute('src', src);
+      viewer.setAttribute('poster', imageUrl);
+      viewer.setAttribute('alt', `3D model of ${productName}`);
+
+      // Show/hide no-model overlay
+      noModel.style.display = 'none';
+      viewer.style.display = 'block';
+
+      // Show AR hint on mobile
+      if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+        mobileHint.style.display = 'flex';
+      }
+
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeARViewer() {
+      const modal  = document.getElementById('ar-modal');
+      const viewer = document.getElementById('ar-model-viewer');
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+      // Stop the model from loading/animating when closed
+      viewer.removeAttribute('src');
+    }
+
+    // Close on backdrop click
+    document.getElementById('ar-modal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('ar-modal')) closeARViewer();
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.getElementById('ar-modal').style.display === 'flex') closeARViewer();
     });
   </script>
 
