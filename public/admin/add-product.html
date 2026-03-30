@@ -198,6 +198,21 @@
         </div>
         
         <div class="form-group">
+  <label for="modelUrl">3D Model URL (.glb file) — Optional</label>
+  <input
+    type="text"
+    id="modelUrl"
+    placeholder="https://example.com/models/sofa.glb  OR  /models/sofa.glb"
+    style="width:100%; padding:0.75rem; border:1px solid #bdc3c7; border-radius:5px; font-size:1rem;"
+  >
+  <small style="color:#7f8c8d; margin-top:0.35rem; display:block; line-height:1.5;">
+    Paste an external URL (e.g. from Sketchfab, Google Poly, or Firebase Storage)
+    or a local path to a .glb file in your <code>public/models/</code> folder.
+    Leave blank to use a placeholder in AR view.
+  </small>
+</div>
+
+        <div class="form-group">
           <label for="stock">Base Stock Quantity *</label>
           <input type="number" id="stock" required min="0" placeholder="0">
           <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">
