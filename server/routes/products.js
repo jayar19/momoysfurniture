@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/firebase'); // Adjust path to your Firebase config
+const admin = require('firebase-admin');
+
+// Get db from admin (initialized in server.js)
+const db = admin.firestore();
 
 // GET /api/products - Get all or filtered products
 router.get('/', async (req, res) => {
