@@ -96,8 +96,16 @@ function displayProducts(products) {
           `<p style="font-size: 0.85rem; color: #3498db; margin-bottom: 1rem;">✓ ${product.variants.length} variants available</p>` : 
           ''}
         <div class="product-actions">
-          <button class="btn btn-primary" onclick='viewProductDetails(${JSON.stringify(product).replace(/'/g, "&apos;")})' style="width: 100%;">
+          <button class="btn btn-primary" onclick='viewProductDetails(${JSON.stringify(product).replace(/'/g, "&apos;")})' style="flex: 1;">
             View Details
+          </button>
+          <button class="btn btn-secondary" onclick="event.stopPropagation(); openARViewer('${product.id}', '${product.name.replace(/'/g, "\\'")}', '${(product.modelUrl || '').replace(/'/g, "\\'")}', '${product.imageUrl.replace(/'/g, "\\'")}')" style="flex: 0.4; padding: 0.5rem; font-size: 0.9rem;" title="View in AR / 3D">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; margin-right: 0.25rem;">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+            3D
           </button>
         </div>
       </div>
@@ -198,6 +206,14 @@ function viewProductDetails(product) {
             <div style="display: flex; gap: 1rem; margin-top: 2rem;">
               <button id="add-to-cart-btn" class="btn btn-secondary" style="flex: 1; padding: 1rem; font-size: 1.1rem;">🛒 Add to Cart</button>
               <button id="buy-now-btn" class="btn btn-primary" style="flex: 1; padding: 1rem; font-size: 1.1rem;">⚡ Buy Now</button>
+              <button id="view-ar-btn" class="btn btn-secondary" style="flex: 0.5; padding: 1rem; font-size: 0.9rem;" title="View in AR / 3D">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                  <line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+              </button>
+            </div>
             </div>
           </div>
         </div>
@@ -230,6 +246,18 @@ function viewProductDetails(product) {
   // Add to cart & buy now
   document.getElementById('add-to-cart-btn').addEventListener('click', () => addToCartFromModal(product));
   document.getElementById('buy-now-btn').addEventListener('click', () => buyNowFromModal(product));
+  
+  // AR button
+  const arBtn = document.getElementById('view-ar-btn');
+  if (arBtn) {
+    arBtn.addEventListener('click', () => {
+      const modelUrl = product.modelUrl || '';
+      const imageUrl = hasVariants && document.querySelector('.variant-option.selected') 
+        ? document.getElementById('product-main-image').src 
+        : product.imageUrl;
+      openARViewer(product.id, product.name, modelUrl, imageUrl);
+    });
+  }
 }
 
 // Select variant
