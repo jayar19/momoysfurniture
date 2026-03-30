@@ -1192,3 +1192,239 @@ nav.nav-hidden {
   .footer-bottom  { flex-direction: column; align-items: flex-start; }
   .masonry-grid   { grid-template-columns: 1fr; }
 }
+
+/* ── Auth UI ── */
+.auth-required { display: none !important; }
+.guest-only { display: block; }
+
+/* ── Messages ── */
+.message-container { display: none; }
+
+/* ── AR Modal ── */
+#ar-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 3000;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+#ar-modal.open { display: flex; }
+
+#ar-modal > div:first-child {
+  background: #1a1a1a;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 700px;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+
+/* AR Modal Header */
+.ar-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.1rem 1.5rem;
+  background: #111;
+  border-bottom: 1px solid #333;
+}
+
+.ar-modal-header-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 0.2rem;
+}
+
+.ar-modal-header-title {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  color: #fff;
+  font-weight: 700;
+}
+
+.ar-modal-close-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.ar-modal-close-btn:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* AR Model Viewer */
+.ar-modal-viewer {
+  position: relative;
+  background: #222;
+}
+
+#ar-model-viewer {
+  width: 100%;
+  height: 420px;
+  background: #222;
+}
+
+/* AR No-Model Fallback */
+#ar-no-model {
+  display: none;
+  position: absolute;
+  inset: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #222;
+  color: #888;
+  text-align: center;
+  padding: 2rem;
+}
+
+.ar-no-model-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.ar-no-model-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ccc;
+  margin-bottom: 0.5rem;
+}
+
+.ar-no-model-text {
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+/* AR Controls */
+.ar-modal-controls {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  padding: 0.9rem 1.5rem;
+  background: #111;
+  border-top: 1px solid #2a2a2a;
+  flex-wrap: wrap;
+}
+
+.ar-control-hint {
+  font-size: 0.75rem;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ar-control-hint.mobile { color: #FFDA1A; }
+
+/* AR Marker Mode */
+.ar-marker-section {
+  padding: 1rem 1.5rem;
+  background: #0d0d0d;
+  border-top: 1px solid #222;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.ar-marker-text-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.2rem;
+}
+
+.ar-marker-text-desc {
+  font-size: 0.72rem;
+  color: #666;
+  line-height: 1.4;
+}
+
+.ar-marker-btn {
+  background: #FFDA1A;
+  color: #111;
+  border: none;
+  border-radius: 999px;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.ar-marker-btn:hover { background: #ffe94d; }
+
+/* ── Products Page Utilities ── */
+.products-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.category-filter {
+  padding: 0.5rem;
+  border-radius: 5px;
+  border: 1px solid #bdc3c7;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+/* ── Product Actions ── */
+.product-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ar-btn {
+  background: #1a1a1a;
+  color: #FFDA1A;
+  border: 2px solid #FFDA1A;
+  border-radius: 999px;
+  padding: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: inherit;
+  transition: background 0.2s, color 0.2s;
+}
+
+.ar-btn:hover {
+  background: #FFDA1A;
+  color: #111;
+}
+
+/* Responsive AR Modal */
+@media (max-width: 768px) {
+  #ar-modal { padding: 0.5rem; }
+  
+  #ar-modal > div:first-child {
+    max-width: 100%;
+    border-radius: 12px;
+  }
+  
+  #ar-model-viewer { height: 300px; }
+  
+  .ar-modal-controls { gap: 1rem; }
+}
