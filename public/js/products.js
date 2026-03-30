@@ -99,7 +99,7 @@ function displayProducts(products) {
           <button class="btn btn-primary" onclick='viewProductDetails(${JSON.stringify(product).replace(/'/g, "&apos;")})' style="flex: 1;">
             View Details
           </button>
-          <button class="btn btn-secondary" onclick="event.stopPropagation(); openARViewer('${product.id}', '${product.name.replace(/'/g, "\\'")}', '${(product.modelUrl || '').replace(/'/g, "\\'")}', '${product.imageUrl.replace(/'/g, "\\'")}')" style="flex: 0.4; padding: 0.5rem; font-size: 0.9rem;" title="View in AR / 3D">
+          <button class="btn btn-secondary ar-btn" data-product-id="${product.id}" data-product-name="${product.name}" data-model-url="${product.modelUrl || ''}" data-image-url="${product.imageUrl}" style="flex: 0.4; padding: 0.5rem; font-size: 0.9rem;" title="View in AR / 3D">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; margin-right: 0.25rem;">
               <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
               <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
@@ -111,12 +111,25 @@ function displayProducts(products) {
       </div>
     </div>
   `).join('');
-  document.querySelectorAll('.view-details-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const product = JSON.parse(btn.dataset.product);
-    viewProductDetails(product);
+  
+  // Add event listeners to AR buttons
+  document.querySelectorAll('.ar-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const productId = btn.dataset.productId;
+      const productName = btn.dataset.productName;
+      const modelUrl = btn.dataset.modelUrl;
+      const imageUrl = btn.dataset.imageUrl;
+      
+      console.log('AR Button clicked:', { productId, productName, modelUrl, imageUrl });
+      
+      if (typeof openARViewer === 'function') {
+        openARViewer(productId, productName, modelUrl, imageUrl);
+      } else {
+        console.error('openARViewer function not found');
+      }
+    });
   });
-});
 }
 
 // View product details
@@ -255,7 +268,16 @@ function viewProductDetails(product) {
       const imageUrl = hasVariants && document.querySelector('.variant-option.selected') 
         ? document.getElementById('product-main-image').src 
         : product.imageUrl;
-      openARViewer(product.id, product.name, modelUrl, imageUrl);
+      
+      console.log('Modal AR clicked:', { productId: product.id, productName: product.name, modelUrl, imageUrl });
+      
+      if (typeof openARViewer === 'function') {
+        closeProductModal();
+        openARViewer(product.id, product.name, modelUrl, imageUrl);
+      } else {
+        console.error('openARViewer function not found');
+        alert('3D viewer not available. Please refresh the page.');
+      }
     });
   }
 }
