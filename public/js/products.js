@@ -425,12 +425,16 @@ function updateCartCount() {
 }
 
 // Category filter
-const categoryFilter = document.getElementById('category-filter');
-if (categoryFilter) {
-  categoryFilter.addEventListener('change', (e) => {
-    const category = e.target.value;
-    loadProducts(category || null);
-  });
+function initializeCategoryFilter() {
+  if (typeof document !== 'undefined') {
+    const categoryFilter = document.getElementById('category-filter');
+    if (categoryFilter) {
+      categoryFilter.addEventListener('change', (e) => {
+        const category = e.target.value;
+        loadProducts(category || null);
+      });
+    }
+  }
 }
 
 // Show message
@@ -450,18 +454,31 @@ function showMessage(message, type) {
 }
 
 // Initialize - wait for backend before loading
-if (document.getElementById('products-container')) {
-  // Wait for backend to be ready
-  if (typeof waitForBackend === 'function') {
-    waitForBackend().then(() => {
-      console.log('Backend ready, loading products...');
+function initializeProductsPage() {
+  if (typeof document !== 'undefined' && document.getElementById('products-container')) {
+    // Wait for backend to be ready
+    if (typeof waitForBackend === 'function') {
+      waitForBackend().then(() => {
+        console.log('Backend ready, loading products...');
+        loadProducts();
+      });
+    } else {
+      // Fallback if startup-check.js not loaded
+      console.log('Loading products without backend check...');
       loadProducts();
-    });
-  } else {
-    // Fallback if startup-check.js not loaded
-    console.log('Loading products without backend check...');
-    loadProducts();
+    }
+  }
+  if (typeof document !== 'undefined') {
+    updateCartCount();
   }
 }
 
-updateCartCount();
+// Auto-initialize on DOM ready if not explicitly initialized
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeProductsPage);
+  } else {
+    // DOM is already loaded
+    initializeProductsPage();
+  }
+}
