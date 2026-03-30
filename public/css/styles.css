@@ -1194,8 +1194,17 @@ nav.nav-hidden {
 }
 
 /* ── Auth UI ── */
-.auth-required { display: none !important; }
-.guest-only { display: block; }
+.auth-required { display: none; }
+.auth-required.visible { 
+  display: list-item; /* For <li> elements in nav */
+}
+
+.guest-only { 
+  display: list-item; /* Default for <li> elements */
+}
+.guest-only.hidden { 
+  display: none; 
+}
 
 /* ── Messages ── */
 .message-container { display: none; }

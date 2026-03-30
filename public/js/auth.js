@@ -178,13 +178,29 @@ auth.onAuthStateChanged((user) => {
   const guestOnly    = document.querySelectorAll('.guest-only');
 
   if (user) {
-    authRequired.forEach(el => el.style.display = '');
-    guestOnly.forEach(el => el.style.display = 'none');
+    // User is logged in - show auth-required, hide guest-only
+    authRequired.forEach(el => {
+      el.classList.add('visible');
+      el.classList.remove('hidden');
+    });
+    guestOnly.forEach(el => {
+      el.classList.add('hidden');
+      el.classList.remove('visible');
+    });
   } else {
-    authRequired.forEach(el => el.style.display = 'none');
-    guestOnly.forEach(el => el.style.display = '');
+    // User is not logged in - hide auth-required, show guest-only
+    authRequired.forEach(el => {
+      el.classList.remove('visible');
+      el.classList.add('hidden');
+    });
+    guestOnly.forEach(el => {
+      el.classList.remove('hidden');
+      el.classList.add('visible');
+    });
   }
 
   // Update cart count on auth change
   if (typeof updateCartCount === 'function') updateCartCount();
+  
+  console.log('Auth state updated:', { isLoggedIn: !!user, email: user?.email });
 });
