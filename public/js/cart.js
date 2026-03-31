@@ -8,7 +8,6 @@ function loadCart() {
 // Display cart items
 function displayCart(cart) {
   const container = document.getElementById('cart-items');
-  
   if (!container) return;
   
   if (cart.length === 0) {
@@ -67,26 +66,25 @@ function displayCart(cart) {
 function updateCartSummary(cart) {
   const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const downPayment = totalAmount * 0.3; // 30% down payment
+  const downPayment = totalAmount * 0.3;
   const remainingBalance = totalAmount - downPayment;
   
-  const subtotalEl = document.getElementById('subtotal');
-  const totalItemsEl = document.getElementById('total-items');
-  const totalAmountEl = document.getElementById('total-amount');
-  const downPaymentEl = document.getElementById('down-payment');
+  const subtotalEl        = document.getElementById('subtotal');
+  const totalItemsEl      = document.getElementById('total-items');
+  const totalAmountEl     = document.getElementById('total-amount');
+  const downPaymentEl     = document.getElementById('down-payment');
   const remainingBalanceEl = document.getElementById('remaining-balance');
   
-  if (subtotalEl) subtotalEl.textContent = `₱${totalAmount.toLocaleString()}`;
-  if (totalItemsEl) totalItemsEl.textContent = totalItems;
-  if (totalAmountEl) totalAmountEl.textContent = `₱${totalAmount.toLocaleString()}`;
-  if (downPaymentEl) downPaymentEl.textContent = `₱${downPayment.toLocaleString()}`;
+  if (subtotalEl)         subtotalEl.textContent         = `₱${totalAmount.toLocaleString()}`;
+  if (totalItemsEl)       totalItemsEl.textContent       = totalItems;
+  if (totalAmountEl)      totalAmountEl.textContent      = `₱${totalAmount.toLocaleString()}`;
+  if (downPaymentEl)      downPaymentEl.textContent      = `₱${downPayment.toLocaleString()}`;
   if (remainingBalanceEl) remainingBalanceEl.textContent = `₱${remainingBalance.toLocaleString()}`;
 }
 
 // Update quantity
 function updateQuantity(index, change) {
   const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-  
   cart[index].quantity += change;
   
   if (cart[index].quantity <= 0) {
@@ -100,8 +98,6 @@ function updateQuantity(index, change) {
   localStorage.setItem('cart', JSON.stringify(cart));
   loadCart();
   updateCartCount();
-  
-  // Show brief message
   showMessage(change > 0 ? 'Quantity increased' : 'Quantity decreased', 'success');
 }
 
@@ -129,25 +125,16 @@ async function checkout() {
   }
   
   const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-  
   if (cart.length === 0) {
     alert('Your cart is empty');
     return;
   }
   
-  // Create a simple modal for shipping address
   const modal = document.createElement('div');
   modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); display: flex;
+    align-items: center; justify-content: center; z-index: 2000;
   `;
   
   modal.innerHTML = `
@@ -156,14 +143,12 @@ async function checkout() {
       <div style="margin-bottom: 1rem;">
         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Full Address *</label>
         <textarea id="shipping-address" placeholder="Enter your complete delivery address including street, barangay, city" 
-          style="width: 100%; padding: 0.75rem; border: 1px solid #bdc3c7; border-radius: 5px; min-height: 100px;" 
-          required></textarea>
+          style="width: 100%; padding: 0.75rem; border: 1px solid #bdc3c7; border-radius: 5px; min-height: 100px;" required></textarea>
       </div>
       <div style="margin-bottom: 1rem;">
         <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Contact Number *</label>
         <input type="tel" id="contact-number" placeholder="09XX XXX XXXX" 
-          style="width: 100%; padding: 0.75rem; border: 1px solid #bdc3c7; border-radius: 5px;" 
-          required>
+          style="width: 100%; padding: 0.75rem; border: 1px solid #bdc3c7; border-radius: 5px;" required>
       </div>
       <div style="display: flex; gap: 1rem;">
         <button id="confirm-checkout" class="btn btn-primary" style="flex: 1;">Confirm Order</button>
@@ -174,9 +159,7 @@ async function checkout() {
   
   document.body.appendChild(modal);
   
-  document.getElementById('cancel-checkout').onclick = () => {
-    modal.remove();
-  };
+  document.getElementById('cancel-checkout').onclick = () => modal.remove();
   
   document.getElementById('confirm-checkout').onclick = async () => {
     const address = document.getElementById('shipping-address').value.trim();
@@ -189,73 +172,48 @@ async function checkout() {
     
     modal.remove();
     
-    const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const downPayment = totalAmount * 0.3;
-    
+    const totalAmount    = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const downPayment    = totalAmount * 0.3;
     const shippingAddress = `${address}\nContact: ${contact}`;
     
     try {
-      // Show loading
-      const checkoutBtn = document.getElementById('checkout-btn');
-      const originalText = checkoutBtn.textContent;
-      checkoutBtn.textContent = 'Processing Order...';
-      checkoutBtn.disabled = true;
+      const checkoutBtn    = document.getElementById('checkout-btn');
+      const originalText   = checkoutBtn ? checkoutBtn.textContent : '';
+      if (checkoutBtn) { checkoutBtn.textContent = 'Processing Order...'; checkoutBtn.disabled = true; }
       
       const token = await getAuthToken();
       
       const orderResponse = await fetch(`${API_BASE_URL}/orders`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          items: cart,
-          totalAmount,
-          downPayment,
-          shippingAddress
-        })
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ items: cart, totalAmount, downPayment, shippingAddress })
       });
       
       const order = await orderResponse.json();
       
       if (orderResponse.ok) {
-        // Process payment
         await fetch(`${API_BASE_URL}/payments/down-payment`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            orderId: order.id,
-            amount: downPayment,
-            paymentMethod: 'cash'
-          })
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ orderId: order.id, amount: downPayment, paymentMethod: 'cash' })
         });
         
-        // Clear cart
         localStorage.removeItem('cart');
         updateCartCount();
         
-        // Show success message
-        alert('✅ Order placed successfully!\n\nOrder ID: #' + order.id.substring(0, 8) + 
-              '\nDown Payment: ₱' + downPayment.toLocaleString() + 
+        alert('✅ Order placed successfully!\n\nOrder ID: #' + order.id.substring(0, 8) +
+              '\nDown Payment: ₱' + downPayment.toLocaleString() +
               '\n\nYou can track your order in the "My Orders" page.');
         window.location.href = '/orders.html';
       } else {
         alert('Failed to place order: ' + order.error);
-        checkoutBtn.textContent = originalText;
-        checkoutBtn.disabled = false;
+        if (checkoutBtn) { checkoutBtn.textContent = originalText; checkoutBtn.disabled = false; }
       }
     } catch (error) {
       console.error('Checkout error:', error);
       alert('Failed to place order. Please try again.');
-      const checkoutBtn = document.getElementById('checkout-btn');
-      if (checkoutBtn) {
-        checkoutBtn.textContent = 'Proceed to Checkout';
-        checkoutBtn.disabled = false;
-      }
+      const btn = document.getElementById('checkout-btn');
+      if (btn) { btn.textContent = 'Proceed to Checkout'; btn.disabled = false; }
     }
   };
 }
@@ -264,26 +222,24 @@ async function checkout() {
 function showMessage(message, type) {
   const messageDiv = document.getElementById('message');
   if (!messageDiv) return;
-  
   messageDiv.className = `alert alert-${type === 'success' ? 'success' : 'error'}`;
   messageDiv.textContent = message;
   messageDiv.style.display = 'block';
-  
-  setTimeout(() => {
-    messageDiv.style.display = 'none';
-  }, 3000);
+  setTimeout(() => { messageDiv.style.display = 'none'; }, 3000);
 }
 
-// Checkout button - show terms modal first
+// Checkout button — open agreement modal first, reset its state
 const checkoutBtn = document.getElementById('checkout-btn');
 if (checkoutBtn) {
   checkoutBtn.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const modal = document.getElementById('agreement-modal');
-    const checkbox = document.getElementById('agree-checkbox');
+    const modal      = document.getElementById('agreement-modal');
+    const checkbox   = document.getElementById('agree-checkbox');
+    const confirmBtn = document.getElementById('confirm-checkout-btn');
     if (modal && checkbox) {
       checkbox.checked = false;
+      if (confirmBtn) confirmBtn.classList.remove('enabled');
       modal.classList.add('open');
       document.body.style.overflow = 'hidden';
     }
@@ -292,7 +248,6 @@ if (checkoutBtn) {
 
 // Initialize
 if (document.getElementById('cart-items')) {
-  // Check if user is logged in
   auth.onAuthStateChanged((user) => {
     if (!user) {
       window.location.href = '/login.html';

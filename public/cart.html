@@ -61,7 +61,6 @@
         flex-direction: column;
         text-align: center;
       }
-
       .cart-item-image {
         width: 100%;
         max-width: 200px;
@@ -73,7 +72,7 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.55);
+      background: rgba(0,0,0,0.55);
       z-index: 1000;
       align-items: center;
       justify-content: center;
@@ -92,7 +91,7 @@
       max-height: 90vh;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
       overflow: hidden;
     }
 
@@ -118,12 +117,10 @@
       cursor: pointer;
       color: #7f8c8d;
       line-height: 1;
-      padding: 0;
+      padding: 0.25rem 0.5rem;
     }
 
-    .agreement-close:hover {
-      color: #2c3e50;
-    }
+    .agreement-close:hover { color: #2c3e50; }
 
     .agreement-body {
       padding: 1.25rem 1.75rem;
@@ -139,9 +136,7 @@
       color: #555;
     }
 
-    .agreement-section {
-      margin-bottom: 1.25rem;
-    }
+    .agreement-section { margin-bottom: 1.25rem; }
 
     .agreement-section h4 {
       font-size: 0.9rem;
@@ -152,9 +147,7 @@
       letter-spacing: 0.04em;
     }
 
-    .agreement-section p {
-      margin: 0;
-    }
+    .agreement-section p { margin: 0; }
 
     .agreement-footer {
       padding: 1.25rem 1.75rem;
@@ -168,7 +161,6 @@
       align-items: flex-start;
       gap: 0.75rem;
       margin-bottom: 1rem;
-      cursor: pointer;
     }
 
     .agreement-checkbox-row input[type="checkbox"] {
@@ -187,34 +179,31 @@
       line-height: 1.5;
     }
 
+    /* ── Confirm button — clean two-state, no pointer-events hacks ── */
     #confirm-checkout-btn {
       width: 100%;
       padding: 0.9rem;
       font-size: 1rem;
-      opacity: 0.45;
+      border: none;
+      border-radius: 5px;
+      display: block;
       cursor: not-allowed;
-      transition: all 0.2s;
-      pointer-events: none !important;
-      background-color: #bdc3c7 !important;
-      color: #7f8c8d !important;
-    }
-
-    #confirm-checkout-btn:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-      pointer-events: none !important;
+      background: #bdc3c7;
+      color: #7f8c8d;
+      opacity: 0.6;
+      transition: background 0.2s, color 0.2s, opacity 0.2s;
+      font-family: inherit;
     }
 
     #confirm-checkout-btn.enabled {
-      opacity: 1;
       cursor: pointer;
-      pointer-events: auto !important;
-      background-color: #2c3e50 !important;
-      color: white !important;
+      background: #2c3e50;
+      color: #fff;
+      opacity: 1;
     }
 
     #confirm-checkout-btn.enabled:hover {
-      background-color: #34495e !important;
+      background: #34495e;
     }
   </style>
 </head>
@@ -247,7 +236,6 @@
           <span>Subtotal:</span>
           <strong id="subtotal">₱0</strong>
         </div>
-
         <div style="display: flex; justify-content: space-between; margin: 0.75rem 0; font-size: 1.1rem;">
           <span>Total Items:</span>
           <strong id="total-items">0</strong>
@@ -259,12 +247,10 @@
           <span><strong>Total Amount:</strong></span>
           <strong id="total-amount" style="color: #e67e22;">₱0</strong>
         </div>
-
         <div style="display: flex; justify-content: space-between; margin: 1rem 0; background: #fff3cd; padding: 1rem; border-radius: 5px;">
           <span>Down Payment (30%):</span>
           <strong id="down-payment" style="color: #856404;">₱0</strong>
         </div>
-
         <div style="display: flex; justify-content: space-between; margin: 1rem 0; background: #d1ecf1; padding: 1rem; border-radius: 5px;">
           <span>Remaining Balance:</span>
           <strong id="remaining-balance" style="color: #0c5460;">₱0</strong>
@@ -331,8 +317,7 @@
           <input type="checkbox" id="agree-checkbox">
           <label for="agree-checkbox">I have read and agree to the Terms &amp; Conditions, including the non-refundable down payment policy.</label>
         </div>
-
-        <button id="confirm-checkout-btn" class="btn btn-primary" disabled>
+        <button id="confirm-checkout-btn">
           Confirm &amp; Proceed to Checkout
         </button>
       </div>
@@ -350,85 +335,60 @@
   <script src="/js/config.js"></script>
 
   <script>
-    // Initialize agreement modal
-    document.addEventListener('DOMContentLoaded', function() {
-      const agreementModal = document.getElementById('agreement-modal');
-      const closeBtn = document.getElementById('agreement-close-btn');
-      const agreeCheckbox = document.getElementById('agree-checkbox');
-      const confirmBtn = document.getElementById('confirm-checkout-btn');
+    // cart.js already handles opening the modal on checkout-btn click.
+    // We just wire up the modal UI controls here.
 
-      if (!agreementModal || !agreeCheckbox || !confirmBtn) {
-        console.error('Agreement modal elements not found');
-        return;
-      }
+    const agreementModal = document.getElementById('agreement-modal');
+    const closeBtn       = document.getElementById('agreement-close-btn');
+    const agreeCheckbox  = document.getElementById('agree-checkbox');
+    const confirmBtn     = document.getElementById('confirm-checkout-btn');
 
-      // Function to close modal
-      function closeAgreementModal() {
-        agreementModal.classList.remove('open');
-        document.body.style.overflow = '';
-        agreeCheckbox.checked = false;
-        updateButtonState();
-      }
+    function closeAgreementModal() {
+      agreementModal.classList.remove('open');
+      document.body.style.overflow = '';
+    }
 
-      // Update button state
-      function updateButtonState() {
-        const isChecked = agreeCheckbox.checked;
-        confirmBtn.disabled = !isChecked;
-        if (isChecked) {
-          confirmBtn.classList.add('enabled');
-        } else {
-          confirmBtn.classList.remove('enabled');
-        }
-      }
+    // Close button
+    closeBtn.onclick = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeAgreementModal();
+    };
 
-      // Close button click
-      if (closeBtn) {
-        closeBtn.onclick = function(e) {
-          e.preventDefault();
-          closeAgreementModal();
-        };
-      }
-
-      // Close on backdrop click
-      agreementModal.onclick = function(e) {
-        if (e.target === agreementModal) {
-          closeAgreementModal();
-        }
-      };
-
-      // Close on Escape key
-      document.onkeydown = function(e) {
-        if (e.key === 'Escape' && agreementModal.classList.contains('open')) {
-          closeAgreementModal();
-        }
-      };
-
-      // Checkbox change
-      agreeCheckbox.onchange = function() {
-        updateButtonState();
-      };
-
-      // Confirm button click
-      confirmBtn.onclick = function(e) {
-        e.preventDefault();
-        if (!agreeCheckbox.checked) {
-          return;
-        }
-        closeAgreementModal();
-        setTimeout(function() {
-          if (typeof checkout === 'function') {
-            checkout();
-          }
-        }, 100);
-      };
+    // Backdrop click
+    agreementModal.addEventListener('click', function(e) {
+      if (e.target === agreementModal) closeAgreementModal();
     });
 
-    // Handle logout button
+    // Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && agreementModal.classList.contains('open')) {
+        closeAgreementModal();
+      }
+    });
+
+    // Checkbox — enable/disable confirm button
+    agreeCheckbox.onchange = function() {
+      confirmBtn.classList.toggle('enabled', this.checked);
+    };
+
+    // Confirm button — call checkout() from cart.js
+    confirmBtn.onclick = function(e) {
+      e.preventDefault();
+      if (!agreeCheckbox.checked) return;
+      closeAgreementModal();
+      setTimeout(function() {
+        if (typeof checkout === 'function') checkout();
+      }, 150);
+    };
+
+    // Logout
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
-      logoutBtn.addEventListener('click', (e) => {
+      logoutBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        logoutUser();
+        if (typeof logoutUser === 'function') logoutUser();
+        else auth.signOut().then(() => window.location.href = '/');
       });
     }
   </script>
