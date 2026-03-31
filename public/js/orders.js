@@ -125,8 +125,12 @@ function displayOrders(orders) {
       </div>`
     ).join('');
     
-    const paymentBadgeClass = order.paymentStatus === 'fully_paid' ? 'payment-full' : 'payment-partial';
-    const paymentText = order.paymentStatus === 'fully_paid' ? 'Fully Paid' : 'Partial Payment';
+    const downPaymentSettled = order.paymentStatus === 'down_payment_paid' || order.paymentStatus === 'fully_paid' || order.paymentStatus === 'paid';
+    const fullyPaid = order.paymentStatus === 'fully_paid' || order.paymentStatus === 'paid';
+    const paymentBadgeClass = fullyPaid ? 'payment-full' : 'payment-partial';
+    const paymentText = fullyPaid
+      ? 'Fully Paid'
+      : (downPaymentSettled ? 'Down Payment Paid' : 'Down Payment Pending');
     
     return `
       <div class="order-card">
@@ -178,6 +182,9 @@ function displayOrders(orders) {
             ` : ''}
           </div>
           <div class="order-actions">
+            ${!downPaymentSettled ? `
+              <a href="/payment.html?orderId=${order.id}" class="btn btn-primary">Pay Down Payment (GCash)</a>
+            ` : ''}
             ${order.currentLocation ? `
               <a href="/track-delivery.html?orderId=${order.id}" class="btn btn-primary">📍 Track Delivery</a>
             ` : `

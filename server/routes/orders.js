@@ -19,7 +19,7 @@ router.post('/', verifyToken, async (req, res) => {
       remainingBalance: parseFloat(totalAmount) - parseFloat(downPayment),
       shippingAddress,
       status: 'pending',
-      paymentStatus: 'down_payment_paid',
+      paymentStatus: 'pending_down_payment',
       deliveryStatus: 'processing',
       currentLocation: null,
       estimatedDelivery: null,

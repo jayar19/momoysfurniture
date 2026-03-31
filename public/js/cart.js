@@ -175,11 +175,11 @@ async function checkout() {
     const totalAmount    = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const downPayment    = totalAmount * 0.3;
     const shippingAddress = `${address}\nContact: ${contact}`;
-    
+
     try {
       const checkoutBtn    = document.getElementById('checkout-btn');
       const originalText   = checkoutBtn ? checkoutBtn.textContent : '';
-      if (checkoutBtn) { checkoutBtn.textContent = 'Processing Order...'; checkoutBtn.disabled = true; }
+      if (checkoutBtn) { checkoutBtn.textContent = 'Creating Order...'; checkoutBtn.disabled = true; }
       
       const token = await getAuthToken();
       
@@ -192,26 +192,17 @@ async function checkout() {
       const order = await orderResponse.json();
       
       if (orderResponse.ok) {
-        await fetch(`${API_BASE_URL}/payments/down-payment`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ orderId: order.id, amount: downPayment, paymentMethod: 'cash' })
-        });
-        
         localStorage.removeItem('cart');
         updateCartCount();
-        
-        alert('✅ Order placed successfully!\n\nOrder ID: #' + order.id.substring(0, 8) +
-              '\nDown Payment: ₱' + downPayment.toLocaleString() +
-              '\n\nYou can track your order in the "My Orders" page.');
-        window.location.href = '/orders.html';
-      } else {
-        alert('Failed to place order: ' + order.error);
-        if (checkoutBtn) { checkoutBtn.textContent = originalText; checkoutBtn.disabled = false; }
+        window.location.href = `/payment.html?orderId=${encodeURIComponent(order.id)}`;
+        return;
       }
+
+      alert('Failed to create order: ' + order.error);
+      if (checkoutBtn) { checkoutBtn.textContent = originalText; checkoutBtn.disabled = false; }
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('Failed to place order. Please try again.');
+      alert('Failed to create order. Please try again.');
       const btn = document.getElementById('checkout-btn');
       if (btn) { btn.textContent = 'Proceed to Checkout'; btn.disabled = false; }
     }
@@ -303,5 +294,6 @@ if (document.getElementById('cart-items')) {
     }
   });
 }
+
 
 

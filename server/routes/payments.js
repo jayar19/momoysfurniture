@@ -16,6 +16,15 @@ router.post('/down-payment', verifyToken, async (req, res) => {
     if (!orderDoc.exists) {
       return res.status(404).json({ error: 'Order not found' });
     }
+    const order = orderDoc.data();
+
+    if (order.userId !== req.user.uid) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (order.paymentStatus === 'down_payment_paid' || order.paymentStatus === 'fully_paid' || order.paymentStatus === 'paid') {
+      return res.status(400).json({ error: 'Down payment is already settled for this order' });
+    }
     
     const paymentData = {
       orderId,
@@ -49,6 +58,11 @@ router.post('/remaining-balance', verifyToken, async (req, res) => {
     const orderDoc = await db.collection('orders').doc(orderId).get();
     if (!orderDoc.exists) {
       return res.status(404).json({ error: 'Order not found' });
+    }
+    const order = orderDoc.data();
+
+    if (order.userId !== req.user.uid) {
+      return res.status(403).json({ error: 'Access denied' });
     }
     
     const paymentData = {
