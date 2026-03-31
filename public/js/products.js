@@ -96,10 +96,10 @@ function displayProducts(products) {
           `<p style="font-size: 0.85rem; color: #3498db; margin-bottom: 1rem;">✓ ${product.variants.length} variants available</p>` : 
           ''}
         <div class="product-actions">
-          <button class="btn btn-primary" onclick='viewProductDetails(${JSON.stringify(product).replace(/'/g, "&apos;")})' style="flex: 1;">
+          <button class="btn btn-primary" onclick='viewProductDetails(${JSON.stringify(product).replace(/'/g, "&apos;")})' style="flex: 1 1 0;">
             View Details
           </button>
-          <button class="btn btn-secondary ar-btn" data-product-id="${product.id}" data-product-name="${product.name}" data-model-url="${product.modelUrl || ''}" data-image-url="${product.imageUrl}" style="flex: 0.4; padding: 0.5rem; font-size: 0.9rem;" title="View in AR / 3D">
+          <button class="btn btn-secondary ar-btn" data-product-id="${product.id}" data-product-name="${product.name}" data-model-url="${product.modelUrl || ''}" data-image-url="${product.imageUrl}" style="flex: 0.4 1 0; padding: 0.5rem; font-size: 0.9rem;" title="View in AR / 3D">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; margin-right: 0.25rem;">
               <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
               <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
@@ -159,14 +159,14 @@ function viewProductDetails(product) {
 
   // Build modal inner HTML
   modal.innerHTML = `
-    <div style="background: white; border-radius: 15px; max-width: 900px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-      <div style="position: sticky; top: 0; background: white; z-index: 10; padding: 1.5rem; border-bottom: 1px solid #ecf0f1; display: flex; justify-content: space-between; align-items: center; border-radius: 15px 15px 0 0;">
+    <div class="product-modal-card">
+      <div class="product-modal-header">
         <h2 style="margin: 0;">${product.name}</h2>
-        <button id="close-product-modal" style="background: none; border: none; font-size: 2rem; cursor: pointer; color: #7f8c8d;">&times;</button>
+        <button id="close-product-modal" class="product-modal-close">&times;</button>
       </div>
       
-      <div style="padding: 2rem;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+      <div class="product-modal-body">
+        <div class="product-modal-grid">
           <div>
             <img id="product-main-image" src="${hasVariants ? defaultVariant.imageUrl : product.imageUrl}" 
                  style="width: 100%; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);" 
@@ -177,7 +177,7 @@ function viewProductDetails(product) {
           <div>
             <p style="color: #7f8c8d; margin-bottom: 1rem;">${product.description}</p>
             <p style="font-size: 0.9rem; color: #95a5a6; margin-bottom: 0.5rem;">Category: ${product.category}</p>
-            <div style="display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1.5rem;">
+            <div class="product-modal-price-row" style="align-items: baseline; margin-bottom: 1.5rem;">
               <span style="font-size: 2rem; font-weight: bold; color: #e67e22;" id="selected-price">₱${hasVariants ? defaultVariant.price.toLocaleString() : product.price.toLocaleString()}</span>
               <span style="color: #27ae60; font-size: 0.9rem;" id="stock-status">${hasVariants ? defaultVariant.stock : product.stock} in stock</span>
             </div>
@@ -203,7 +203,7 @@ function viewProductDetails(product) {
 
             <div style="margin-bottom: 1.5rem;">
               <label style="display: block; font-weight: 600; margin-bottom: 0.75rem;">Quantity:</label>
-              <div style="display: flex; align-items: center; gap: 1rem;">
+              <div class="product-modal-qty-row">
                 <button id="qty-decrease" style="width: 40px; height: 40px; border: 1px solid #bdc3c7; background: white; border-radius: 5px; cursor: pointer; font-size: 1.2rem;">−</button>
                 <input type="number" id="product-quantity" value="1" min="1" max="${hasVariants ? defaultVariant.stock : product.stock}" 
                        style="width: 80px; text-align: center; padding: 0.5rem; border: 1px solid #bdc3c7; border-radius: 5px; font-size: 1.1rem;">
