@@ -44,6 +44,19 @@
     .payment-value.highlight {
       color: #27ae60;
     }
+
+    .gcash-qr-wrap {
+      margin-top: 1rem;
+      text-align: center;
+    }
+
+    .gcash-qr-img {
+      width: min(280px, 90%);
+      border: 1px solid #ecf0f1;
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+      background: #fff;
+    }
   </style>
 </head>
 <body>
@@ -96,6 +109,15 @@
         <h3 style="margin-bottom: 0.75rem;">GCash Payment Details</h3>
         <p style="margin: 0.3rem 0;"><strong>Account Name:</strong> Momoy's Furniture</p>
         <p style="margin: 0.3rem 0;"><strong>GCash Number:</strong> <span id="gcash-number-text">0998 435 8888</span></p>
+        <div class="gcash-qr-wrap">
+          <p style="margin: 0.3rem 0 0.6rem;"><strong>Scan QR to Pay</strong></p>
+          <img
+            src="/images/gcash-qr.jpg"
+            alt="GCash QR Code"
+            class="gcash-qr-img"
+            onerror="this.style.display='none';"
+          >
+        </div>
         <p style="margin-top: 0.8rem; color: #7f8c8d;">
           Tap Open GCash to launch the app, then complete payment. If deep link is not supported on your device,
           details are copied so you can paste them in GCash manually.
