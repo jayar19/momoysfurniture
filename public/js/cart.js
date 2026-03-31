@@ -228,26 +228,73 @@ function showMessage(message, type) {
   setTimeout(() => { messageDiv.style.display = 'none'; }, 3000);
 }
 
-// Checkout button — open agreement modal first, reset its state
-const checkoutBtn = document.getElementById('checkout-btn');
-if (checkoutBtn) {
+function setupAgreementModal() {
+  const checkoutBtn = document.getElementById('checkout-btn');
+  const modal = document.getElementById('agreement-modal');
+  const closeBtn = document.getElementById('agreement-close-btn');
+  const agreeCheckbox = document.getElementById('agree-checkbox');
+  const confirmBtn = document.getElementById('confirm-checkout-btn');
+
+  if (!checkoutBtn || !modal || !agreeCheckbox || !confirmBtn) return;
+
+  function setConfirmState(isEnabled) {
+    confirmBtn.disabled = !isEnabled;
+    confirmBtn.classList.toggle('enabled', isEnabled);
+  }
+
+  function closeAgreementModal() {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function openAgreementModal() {
+    agreeCheckbox.checked = false;
+    setConfirmState(false);
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
   checkoutBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    e.stopPropagation();
-    const modal      = document.getElementById('agreement-modal');
-    const checkbox   = document.getElementById('agree-checkbox');
-    const confirmBtn = document.getElementById('confirm-checkout-btn');
-    if (modal && checkbox) {
-      checkbox.checked = false;
-      if (confirmBtn) confirmBtn.classList.remove('enabled');
-      modal.classList.add('open');
-      document.body.style.overflow = 'hidden';
+    openAgreementModal();
+  });
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeAgreementModal();
+    });
+  }
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeAgreementModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('open')) {
+      closeAgreementModal();
     }
   });
+
+  agreeCheckbox.addEventListener('change', () => {
+    setConfirmState(agreeCheckbox.checked);
+  });
+
+  confirmBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (!agreeCheckbox.checked) return;
+    closeAgreementModal();
+    setTimeout(() => {
+      checkout();
+    }, 150);
+  });
+
+  setConfirmState(false);
 }
 
 // Initialize
 if (document.getElementById('cart-items')) {
+  setupAgreementModal();
   auth.onAuthStateChanged((user) => {
     if (!user) {
       window.location.href = '/login.html';
@@ -256,3 +303,5 @@ if (document.getElementById('cart-items')) {
     }
   });
 }
+
+

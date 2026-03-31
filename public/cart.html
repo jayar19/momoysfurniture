@@ -285,7 +285,7 @@
 
       <div class="agreement-header">
         <h2 id="agreement-title">Terms &amp; Conditions</h2>
-        <button class="agreement-close" id="agreement-close-btn" aria-label="Close">&times;</button>
+        <button type="button" class="agreement-close" id="agreement-close-btn" aria-label="Close">&times;</button>
       </div>
 
       <div class="agreement-body">
@@ -317,7 +317,7 @@
           <input type="checkbox" id="agree-checkbox">
           <label for="agree-checkbox">I have read and agree to the Terms &amp; Conditions, including the non-refundable down payment policy.</label>
         </div>
-        <button id="confirm-checkout-btn">
+        <button type="button" id="confirm-checkout-btn">
           Confirm &amp; Proceed to Checkout
         </button>
       </div>
@@ -333,64 +333,6 @@
   <script src="/js/products.js"></script>
   <script src="/js/cart.js"></script>
   <script src="/js/config.js"></script>
-
-  <script>
-    // cart.js already handles opening the modal on checkout-btn click.
-    // We just wire up the modal UI controls here.
-
-    const agreementModal = document.getElementById('agreement-modal');
-    const closeBtn       = document.getElementById('agreement-close-btn');
-    const agreeCheckbox  = document.getElementById('agree-checkbox');
-    const confirmBtn     = document.getElementById('confirm-checkout-btn');
-
-    function closeAgreementModal() {
-      agreementModal.classList.remove('open');
-      document.body.style.overflow = '';
-    }
-
-    // Close button
-    closeBtn.onclick = function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      closeAgreementModal();
-    };
-
-    // Backdrop click
-    agreementModal.addEventListener('click', function(e) {
-      if (e.target === agreementModal) closeAgreementModal();
-    });
-
-    // Escape key
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape' && agreementModal.classList.contains('open')) {
-        closeAgreementModal();
-      }
-    });
-
-    // Checkbox — enable/disable confirm button
-    agreeCheckbox.onchange = function() {
-      confirmBtn.classList.toggle('enabled', this.checked);
-    };
-
-    // Confirm button — call checkout() from cart.js
-    confirmBtn.onclick = function(e) {
-      e.preventDefault();
-      if (!agreeCheckbox.checked) return;
-      closeAgreementModal();
-      setTimeout(function() {
-        if (typeof checkout === 'function') checkout();
-      }, 150);
-    };
-
-    // Logout
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        if (typeof logoutUser === 'function') logoutUser();
-        else auth.signOut().then(() => window.location.href = '/');
-      });
-    }
-  </script>
 </body>
 </html>
+
