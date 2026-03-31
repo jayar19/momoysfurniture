@@ -70,6 +70,7 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use('/api/payments/paymongo/webhook', express.raw({ type: 'application/json' }));
 app.use(bodyParser.json());
 
 // API Routes (must come before static files)

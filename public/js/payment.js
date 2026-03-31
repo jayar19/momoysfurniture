@@ -4,6 +4,14 @@ function formatPeso(value) {
   return `P${Number(value || 0).toLocaleString()}`;
 }
 
+function isDownPaymentSettled(order) {
+  return order && (
+    order.paymentStatus === 'down_payment_paid' ||
+    order.paymentStatus === 'fully_paid' ||
+    order.paymentStatus === 'paid'
+  );
+}
+
 function showMessage(message, type) {
   const messageDiv = document.getElementById('message');
   if (!messageDiv) return;
@@ -67,42 +75,46 @@ async function fetchApi(path, token, options = {}) {
   throw lastError || new Error('Unable to contact payment server');
 }
 
-function getGcashNumber() {
-  const numberEl = document.getElementById('gcash-number-text');
-  return (numberEl ? numberEl.textContent : '0998 435 8888').trim();
+function getQueryState() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    orderId: params.get('orderId'),
+    paymongoState: params.get('paymongo')
+  };
 }
 
-function buildPaymentDetailsText() {
-  if (!currentOrder) return '';
-  return [
-    `Order: #${currentOrder.id.substring(0, 8)}`,
-    `Amount: ${formatPeso(currentOrder.downPayment)}`,
-    `GCash Number: ${getGcashNumber()}`,
-    'Account Name: Momoy\'s Furniture'
-  ].join('\n');
+function getStoredCheckoutSessionId(orderId) {
+  if (!orderId) return null;
+  return sessionStorage.getItem(`paymongoCheckoutSession:${orderId}`);
 }
 
-async function copyPaymentDetails() {
-  if (!currentOrder) return;
-  const details = buildPaymentDetailsText();
-  try {
-    await navigator.clipboard.writeText(details);
-    showMessage('Payment details copied.', 'success');
-  } catch (error) {
-    showMessage('Unable to copy automatically. Please copy details manually.', 'error');
+function setStoredCheckoutSessionId(orderId, sessionId) {
+  if (!orderId || !sessionId) return;
+  sessionStorage.setItem(`paymongoCheckoutSession:${orderId}`, sessionId);
+}
+
+function clearStoredCheckoutSessionId(orderId) {
+  if (!orderId) return;
+  sessionStorage.removeItem(`paymongoCheckoutSession:${orderId}`);
+}
+
+function updateActionButtons(order) {
+  const payBtn = document.getElementById('pay-with-gcash-btn');
+  const refreshBtn = document.getElementById('refresh-payment-btn');
+  const settled = isDownPaymentSettled(order);
+
+  if (!payBtn || !refreshBtn) return;
+
+  if (settled) {
+    payBtn.disabled = true;
+    refreshBtn.disabled = false;
+    payBtn.textContent = 'Down Payment Already Paid';
+    return;
   }
-}
 
-async function openGcash() {
-  if (!currentOrder) return;
-
-  await copyPaymentDetails();
-  // Note: Public GCash deep links do not reliably support prefilled recipient+amount.
-  // We still attempt to open the app, then fallback to website.
-  window.location.href = 'gcash://';
-  setTimeout(() => {
-    window.open('https://www.gcash.com/', '_blank');
-  }, 1200);
+  payBtn.disabled = false;
+  refreshBtn.disabled = false;
+  payBtn.textContent = `Pay ${formatPeso(order.downPayment)} Using GCash`;
 }
 
 function updatePage(order) {
@@ -111,25 +123,11 @@ function updatePage(order) {
   document.getElementById('total-amount-text').textContent = formatPeso(order.totalAmount);
   document.getElementById('down-payment-text').textContent = formatPeso(order.downPayment);
   document.getElementById('payment-status-text').textContent = (order.paymentStatus || 'pending').replace(/_/g, ' ');
-
-  const payBtn = document.getElementById('pay-now-btn');
-  const openGcashBtn = document.getElementById('open-gcash-btn');
-  const downPaymentSettled = order.paymentStatus === 'down_payment_paid' || order.paymentStatus === 'fully_paid' || order.paymentStatus === 'paid';
-
-  if (downPaymentSettled) {
-    payBtn.disabled = true;
-    openGcashBtn.disabled = true;
-    payBtn.textContent = 'Down Payment Already Paid';
-  } else {
-    payBtn.disabled = false;
-    openGcashBtn.disabled = false;
-    payBtn.textContent = `I Paid ${formatPeso(order.downPayment)} via GCash`;
-  }
+  updateActionButtons(order);
 }
 
 async function loadOrder() {
-  const params = new URLSearchParams(window.location.search);
-  const orderId = params.get('orderId');
+  const { orderId } = getQueryState();
 
   if (!orderId) {
     hideLoading();
@@ -152,6 +150,7 @@ async function loadOrder() {
     updatePage(currentOrder);
     hideLoading();
     document.getElementById('payment-content').style.display = 'block';
+    await handleReturnFromCheckout();
   } catch (error) {
     hideLoading();
     if (error.name === 'AbortError') {
@@ -162,64 +161,145 @@ async function loadOrder() {
   }
 }
 
-async function payDownPayment() {
+async function syncCheckoutStatus(options = {}) {
+  if (!currentOrder) return false;
+
+  const sessionId = currentOrder.paymongoCheckoutSessionId || getStoredCheckoutSessionId(currentOrder.id);
+  if (!sessionId) {
+    if (!options.silent) {
+      showMessage('No PayMongo checkout session found yet. Start the GCash checkout first.', 'error');
+    }
+    return false;
+  }
+
+  try {
+    const token = await getTokenOrRedirect();
+    if (!token) return false;
+
+    const refreshBtn = document.getElementById('refresh-payment-btn');
+    const originalText = refreshBtn ? refreshBtn.textContent : '';
+    if (refreshBtn) {
+      refreshBtn.disabled = true;
+      refreshBtn.textContent = 'Refreshing...';
+    }
+
+    const response = await fetchApi(`/payments/paymongo/checkout-session/${encodeURIComponent(sessionId)}/sync`, token, {
+      method: 'POST',
+      body: JSON.stringify({ orderId: currentOrder.id })
+    });
+
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || 'Unable to refresh payment status');
+    }
+
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = originalText || 'Refresh Payment Status';
+    }
+
+    await reloadOrder({ silent: true });
+
+    if (payload.paid) {
+      clearStoredCheckoutSessionId(currentOrder.id);
+      showMessage('GCash payment confirmed. Your order down payment is now marked as paid.', 'success');
+      return true;
+    }
+
+    if (!options.silent) {
+      showMessage('Payment is still pending. If you already paid, please wait a moment and refresh again.', 'error');
+    }
+    return false;
+  } catch (error) {
+    const refreshBtn = document.getElementById('refresh-payment-btn');
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = 'Refresh Payment Status';
+    }
+    if (!options.silent) {
+      showMessage(error.message || 'Unable to refresh payment status.', 'error');
+    }
+    return false;
+  }
+}
+
+async function reloadOrder(options = {}) {
+  if (!currentOrder) return null;
+
+  const token = await getTokenOrRedirect();
+  if (!token) return null;
+
+  const response = await fetchApi(`/orders/${encodeURIComponent(currentOrder.id)}`, token, { method: 'GET' });
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || 'Failed to reload order');
+  }
+
+  currentOrder = payload;
+  updatePage(currentOrder);
+
+  if (!options.silent && isDownPaymentSettled(currentOrder)) {
+    showMessage('Down payment already received for this order.', 'success');
+  }
+
+  return currentOrder;
+}
+
+async function handleReturnFromCheckout() {
   if (!currentOrder) return;
 
-  const downPaymentSettled = currentOrder.paymentStatus === 'down_payment_paid' || currentOrder.paymentStatus === 'fully_paid' || currentOrder.paymentStatus === 'paid';
-  if (downPaymentSettled) {
+  const { paymongoState } = getQueryState();
+  if (paymongoState === 'success') {
+    showMessage('Checking your PayMongo payment status...', 'success');
+    const paid = await syncCheckoutStatus({ silent: true });
+    if (!paid && !isDownPaymentSettled(currentOrder)) {
+      showMessage('Payment submitted. We are still waiting for PayMongo confirmation, so please refresh again in a moment.', 'error');
+    }
+  } else if (paymongoState === 'cancelled') {
+    showMessage('GCash checkout was cancelled. You can try again whenever you are ready.', 'error');
+  }
+}
+
+async function startPaymongoCheckout() {
+  if (!currentOrder) return;
+
+  if (isDownPaymentSettled(currentOrder)) {
     showMessage('Down payment is already settled for this order.', 'success');
     return;
   }
 
-  const confirmed = confirm(
-    `Confirm GCash Payment\n\n` +
-    `Order: #${currentOrder.id.substring(0, 8)}\n` +
-    `Amount: ${formatPeso(currentOrder.downPayment)}\n\n` +
-    `Proceed to mark this down payment as paid?`
-  );
-  if (!confirmed) return;
-
-  const payBtn = document.getElementById('pay-now-btn');
+  const payBtn = document.getElementById('pay-with-gcash-btn');
   payBtn.disabled = true;
-  payBtn.textContent = 'Processing Payment...';
+  payBtn.textContent = 'Opening Secure Checkout...';
 
   try {
     const token = await getTokenOrRedirect();
     if (!token) return;
 
-    const response = await fetchApi('/payments/down-payment', token, {
+    const response = await fetchApi('/payments/paymongo/checkout-session', token, {
       method: 'POST',
-      body: JSON.stringify({
-        orderId: currentOrder.id,
-        amount: currentOrder.downPayment,
-        paymentMethod: 'gcash'
-      })
+      body: JSON.stringify({ orderId: currentOrder.id })
     });
 
     const payload = await response.json();
     if (!response.ok) {
-      throw new Error(payload.error || 'Payment failed');
+      throw new Error(payload.error || 'Unable to start GCash checkout');
     }
 
-    showMessage('Down payment recorded successfully. Redirecting to My Orders...', 'success');
-    setTimeout(() => {
-      window.location.href = '/orders.html';
-    }, 1200);
+    setStoredCheckoutSessionId(currentOrder.id, payload.checkoutSessionId);
+    window.location.href = payload.checkoutUrl;
   } catch (error) {
     payBtn.disabled = false;
-    payBtn.textContent = `I Paid ${formatPeso(currentOrder.downPayment)} via GCash`;
-    showMessage(error.message || 'Payment failed. Please try again.', 'error');
+    payBtn.textContent = `Pay ${formatPeso(currentOrder.downPayment)} Using GCash`;
+    showMessage(error.message || 'Unable to open GCash checkout. Please try again.', 'error');
   }
 }
 
-const payNowBtn = document.getElementById('pay-now-btn');
-if (payNowBtn) payNowBtn.addEventListener('click', payDownPayment);
+const payWithGcashBtn = document.getElementById('pay-with-gcash-btn');
+if (payWithGcashBtn) payWithGcashBtn.addEventListener('click', startPaymongoCheckout);
 
-const openGcashBtn = document.getElementById('open-gcash-btn');
-if (openGcashBtn) openGcashBtn.addEventListener('click', openGcash);
-
-const copyDetailsBtn = document.getElementById('copy-details-btn');
-if (copyDetailsBtn) copyDetailsBtn.addEventListener('click', copyPaymentDetails);
+const refreshPaymentBtn = document.getElementById('refresh-payment-btn');
+if (refreshPaymentBtn) refreshPaymentBtn.addEventListener('click', () => syncCheckoutStatus());
 
 const paymentLogoutBtn = document.getElementById('logout-btn');
 if (paymentLogoutBtn) {

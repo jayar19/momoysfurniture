@@ -45,22 +45,13 @@
       color: #27ae60;
     }
 
-    .gcash-qr-wrap {
+    .paymongo-note {
       margin-top: 1rem;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .gcash-qr-img {
-      width: min(280px, 90%);
-      border: 1px solid #ecf0f1;
-      border-radius: 8px;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-      background: #fff;
-      display: block;
-      margin: 0 auto;
+      padding: 1rem;
+      border-radius: 10px;
+      background: #f8fbff;
+      border: 1px solid #d6e9ff;
+      color: #2c3e50;
     }
   </style>
 </head>
@@ -111,27 +102,22 @@
       </div>
 
       <div class="payment-card">
-        <h3 style="margin-bottom: 0.75rem;">GCash Payment Details</h3>
-        <p style="margin: 0.3rem 0;"><strong>Account Name:</strong> Momoy's Furniture</p>
-        <p style="margin: 0.3rem 0;"><strong>GCash Number:</strong> <span id="gcash-number-text">0998 435 8888</span></p>
-        <div class="gcash-qr-wrap">
-          <p style="margin: 0.3rem 0 0.6rem;"><strong>Scan QR to Pay</strong></p>
-          <img
-            src="/images/gcash-qr.jpg"
-            alt="GCash QR Code"
-            class="gcash-qr-img"
-            onerror="this.style.display='none';"
-          >
-        </div>
-        <p style="margin-top: 0.8rem; color: #7f8c8d;">
-          Tap Open GCash to launch the app, then complete payment. If deep link is not supported on your device,
-          details are copied so you can paste them in GCash manually.
+        <h3 style="margin-bottom: 0.75rem;">Secure GCash Checkout</h3>
+        <p style="margin: 0.3rem 0;">
+          PayMongo will open a secure hosted checkout page where the customer can log in to GCash and pay the exact
+          down payment amount for this order.
         </p>
+        <div class="paymongo-note">
+          <strong>What happens next:</strong>
+          <p style="margin: 0.5rem 0 0;">
+            Tap the button below, complete the payment on PayMongo's checkout page, then you will be redirected back
+            here and we will refresh the order status.
+          </p>
+        </div>
 
         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem;">
-          <button id="open-gcash-btn" class="btn btn-primary">Open GCash</button>
-          <button id="pay-now-btn" class="btn btn-primary">I Paid via GCash</button>
-          <button id="copy-details-btn" class="btn btn-secondary">Copy Payment Details</button>
+          <button id="pay-with-gcash-btn" class="btn btn-primary">Pay Using GCash</button>
+          <button id="refresh-payment-btn" class="btn btn-secondary">Refresh Payment Status</button>
           <a href="/orders.html" class="btn btn-secondary">Back to My Orders</a>
         </div>
       </div>
