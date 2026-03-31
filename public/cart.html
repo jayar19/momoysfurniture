@@ -193,14 +193,28 @@
       font-size: 1rem;
       opacity: 0.45;
       cursor: not-allowed;
-      transition: opacity 0.2s;
-      pointer-events: none;
+      transition: all 0.2s;
+      pointer-events: none !important;
+      background-color: #bdc3c7 !important;
+      color: #7f8c8d !important;
+    }
+
+    #confirm-checkout-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none !important;
     }
 
     #confirm-checkout-btn.enabled {
       opacity: 1;
       cursor: pointer;
-      pointer-events: auto;
+      pointer-events: auto !important;
+      background-color: #2c3e50 !important;
+      color: white !important;
+    }
+
+    #confirm-checkout-btn.enabled:hover {
+      background-color: #34495e !important;
     }
   </style>
 </head>
@@ -336,87 +350,78 @@
   <script src="/js/config.js"></script>
 
   <script>
-    // Wait for DOM to be fully ready
-    function initAgreementModal() {
+    // Initialize agreement modal
+    document.addEventListener('DOMContentLoaded', function() {
       const agreementModal = document.getElementById('agreement-modal');
-      const closeBtn       = document.getElementById('agreement-close-btn');
-      const agreeCheckbox  = document.getElementById('agree-checkbox');
-      const confirmBtn     = document.getElementById('confirm-checkout-btn');
+      const closeBtn = document.getElementById('agreement-close-btn');
+      const agreeCheckbox = document.getElementById('agree-checkbox');
+      const confirmBtn = document.getElementById('confirm-checkout-btn');
 
       if (!agreementModal || !agreeCheckbox || !confirmBtn) {
         console.error('Agreement modal elements not found');
         return;
       }
 
-      console.log('Agreement modal initialized');
-
-      // Close modal
+      // Function to close modal
       function closeAgreementModal() {
-        console.log('Closing modal');
         agreementModal.classList.remove('open');
         document.body.style.overflow = '';
+        agreeCheckbox.checked = false;
+        updateButtonState();
       }
 
-      // Close button
+      // Update button state
+      function updateButtonState() {
+        const isChecked = agreeCheckbox.checked;
+        confirmBtn.disabled = !isChecked;
+        if (isChecked) {
+          confirmBtn.classList.add('enabled');
+        } else {
+          confirmBtn.classList.remove('enabled');
+        }
+      }
+
+      // Close button click
       if (closeBtn) {
-        closeBtn.addEventListener('click', (e) => {
+        closeBtn.onclick = function(e) {
           e.preventDefault();
-          e.stopPropagation();
           closeAgreementModal();
-        });
+        };
       }
 
       // Close on backdrop click
-      agreementModal.addEventListener('click', (e) => {
+      agreementModal.onclick = function(e) {
         if (e.target === agreementModal) {
           closeAgreementModal();
         }
-      });
+      };
 
       // Close on Escape key
-      document.addEventListener('keydown', (e) => {
+      document.onkeydown = function(e) {
         if (e.key === 'Escape' && agreementModal.classList.contains('open')) {
           closeAgreementModal();
         }
-      });
+      };
 
-      // Enable confirm button only when checkbox is ticked
-      agreeCheckbox.addEventListener('change', () => {
-        console.log('Checkbox changed:', agreeCheckbox.checked);
-        if (agreeCheckbox.checked) {
-          confirmBtn.classList.add('enabled');
-          confirmBtn.removeAttribute('disabled');
-        } else {
-          confirmBtn.classList.remove('enabled');
-          confirmBtn.setAttribute('disabled', 'disabled');
-        }
-      });
+      // Checkbox change
+      agreeCheckbox.onchange = function() {
+        updateButtonState();
+      };
 
-      // Confirm — close modal then call checkout() from cart.js
-      confirmBtn.addEventListener('click', (e) => {
+      // Confirm button click
+      confirmBtn.onclick = function(e) {
         e.preventDefault();
-        e.stopPropagation();
-        console.log('Confirm button clicked, checkbox checked:', agreeCheckbox.checked);
         if (!agreeCheckbox.checked) {
-          console.log('Checkbox not checked, returning');
           return;
         }
         closeAgreementModal();
-        // Call the checkout function after a small delay to allow modal to close
-        setTimeout(() => {
+        setTimeout(function() {
           if (typeof checkout === 'function') {
             checkout();
           }
         }, 100);
-      });
-    }
-
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initAgreementModal);
-    } else {
-      initAgreementModal();
-    }
+      };
+    });
 
     // Handle logout button
     const logoutBtn = document.getElementById('logout-btn');
