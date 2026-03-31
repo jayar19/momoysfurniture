@@ -221,9 +221,9 @@ if (openGcashBtn) openGcashBtn.addEventListener('click', openGcash);
 const copyDetailsBtn = document.getElementById('copy-details-btn');
 if (copyDetailsBtn) copyDetailsBtn.addEventListener('click', copyPaymentDetails);
 
-const logoutBtn = document.getElementById('logout-btn');
-if (logoutBtn) {
-  logoutBtn.addEventListener('click', async (e) => {
+const paymentLogoutBtn = document.getElementById('logout-btn');
+if (paymentLogoutBtn) {
+  paymentLogoutBtn.addEventListener('click', async (e) => {
     e.preventDefault();
     if (typeof logoutUser === 'function') {
       await logoutUser();
