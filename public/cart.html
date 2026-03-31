@@ -339,16 +339,7 @@
     const agreeCheckbox  = document.getElementById('agree-checkbox');
     const confirmBtn     = document.getElementById('confirm-checkout-btn');
 
-    // Override the checkout-btn click AFTER cart.js has loaded
-    // cart.js binds its own listener, so we use capture phase to intercept first
-    document.getElementById('checkout-btn').addEventListener('click', (e) => {
-      e.stopImmediatePropagation(); // prevent cart.js listener from firing
-      agreeCheckbox.checked = false;
-      confirmBtn.disabled = true;
-      confirmBtn.classList.remove('enabled');
-      agreementModal.classList.add('open');
-      document.body.style.overflow = 'hidden';
-    }, true); // capture = true so this runs before cart.js bubble listener
+
 
     // Close modal
     function closeAgreementModal() {
@@ -378,7 +369,10 @@
     confirmBtn.addEventListener('click', () => {
       if (!agreeCheckbox.checked) return;
       closeAgreementModal();
-      checkout(); // defined in cart.js
+      // Call the checkout function after a small delay to allow modal to close
+      setTimeout(() => {
+        checkout();
+      }, 100);
     });
 
     // Handle logout button

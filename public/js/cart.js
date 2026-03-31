@@ -274,10 +274,20 @@ function showMessage(message, type) {
   }, 3000);
 }
 
-// Checkout button
+// Checkout button - show terms modal first
 const checkoutBtn = document.getElementById('checkout-btn');
 if (checkoutBtn) {
-  checkoutBtn.addEventListener('click', checkout);
+  checkoutBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const modal = document.getElementById('agreement-modal');
+    const checkbox = document.getElementById('agree-checkbox');
+    if (modal && checkbox) {
+      checkbox.checked = false;
+      modal.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+  });
 }
 
 // Initialize
