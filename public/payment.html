@@ -95,13 +95,16 @@
       <div class="payment-card">
         <h3 style="margin-bottom: 0.75rem;">GCash Payment Details</h3>
         <p style="margin: 0.3rem 0;"><strong>Account Name:</strong> Momoy's Furniture</p>
-        <p style="margin: 0.3rem 0;"><strong>GCash Number:</strong> 0998 435 8888</p>
+        <p style="margin: 0.3rem 0;"><strong>GCash Number:</strong> <span id="gcash-number-text">0998 435 8888</span></p>
         <p style="margin-top: 0.8rem; color: #7f8c8d;">
-          Send exactly the down payment amount above, then click the button below to confirm.
+          Tap Open GCash to launch the app, then complete payment. If deep link is not supported on your device,
+          details are copied so you can paste them in GCash manually.
         </p>
 
         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem;">
+          <button id="open-gcash-btn" class="btn btn-primary">Open GCash</button>
           <button id="pay-now-btn" class="btn btn-primary">I Paid via GCash</button>
+          <button id="copy-details-btn" class="btn btn-secondary">Copy Payment Details</button>
           <a href="/orders.html" class="btn btn-secondary">Back to My Orders</a>
         </div>
       </div>
