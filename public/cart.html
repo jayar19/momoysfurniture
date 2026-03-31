@@ -334,46 +334,64 @@
   <script src="/js/config.js"></script>
 
   <script>
-    const agreementModal = document.getElementById('agreement-modal');
-    const closeBtn       = document.getElementById('agreement-close-btn');
-    const agreeCheckbox  = document.getElementById('agree-checkbox');
-    const confirmBtn     = document.getElementById('confirm-checkout-btn');
+    // Wait for DOM to be fully ready
+    function initAgreementModal() {
+      const agreementModal = document.getElementById('agreement-modal');
+      const closeBtn       = document.getElementById('agreement-close-btn');
+      const agreeCheckbox  = document.getElementById('agree-checkbox');
+      const confirmBtn     = document.getElementById('confirm-checkout-btn');
 
+      if (!agreementModal || !agreeCheckbox || !confirmBtn) {
+        console.error('Agreement modal elements not found');
+        return;
+      }
 
+      // Close modal
+      function closeAgreementModal() {
+        agreementModal.classList.remove('open');
+        document.body.style.overflow = '';
+      }
 
-    // Close modal
-    function closeAgreementModal() {
-      agreementModal.classList.remove('open');
-      document.body.style.overflow = '';
+      closeBtn.addEventListener('click', closeAgreementModal);
+
+      // Close on backdrop click
+      agreementModal.addEventListener('click', (e) => {
+        if (e.target === agreementModal) closeAgreementModal();
+      });
+
+      // Close on Escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && agreementModal.classList.contains('open')) closeAgreementModal();
+      });
+
+      // Enable confirm button only when checkbox is ticked
+      agreeCheckbox.addEventListener('change', () => {
+        console.log('Checkbox changed:', agreeCheckbox.checked);
+        confirmBtn.disabled = !agreeCheckbox.checked;
+        if (agreeCheckbox.checked) {
+          confirmBtn.classList.add('enabled');
+        } else {
+          confirmBtn.classList.remove('enabled');
+        }
+      });
+
+      // Confirm — close modal then call checkout() from cart.js
+      confirmBtn.addEventListener('click', () => {
+        if (!agreeCheckbox.checked) return;
+        closeAgreementModal();
+        // Call the checkout function after a small delay to allow modal to close
+        setTimeout(() => {
+          checkout();
+        }, 100);
+      });
     }
 
-    closeBtn.addEventListener('click', closeAgreementModal);
-
-    // Close on backdrop click
-    agreementModal.addEventListener('click', (e) => {
-      if (e.target === agreementModal) closeAgreementModal();
-    });
-
-    // Close on Escape key
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && agreementModal.classList.contains('open')) closeAgreementModal();
-    });
-
-    // Enable confirm button only when checkbox is ticked
-    agreeCheckbox.addEventListener('change', () => {
-      confirmBtn.disabled = !agreeCheckbox.checked;
-      confirmBtn.classList.toggle('enabled', agreeCheckbox.checked);
-    });
-
-    // Confirm — close modal then call checkout() from cart.js
-    confirmBtn.addEventListener('click', () => {
-      if (!agreeCheckbox.checked) return;
-      closeAgreementModal();
-      // Call the checkout function after a small delay to allow modal to close
-      setTimeout(() => {
-        checkout();
-      }, 100);
-    });
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initAgreementModal);
+    } else {
+      initAgreementModal();
+    }
 
     // Handle logout button
     const logoutBtn = document.getElementById('logout-btn');
