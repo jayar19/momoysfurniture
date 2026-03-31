@@ -114,7 +114,7 @@ function updateActionButtons(order) {
 
   payBtn.disabled = false;
   refreshBtn.disabled = false;
-  payBtn.textContent = `Pay ${formatPeso(order.downPayment)} Using GCash`;
+  payBtn.textContent = `Pay ${formatPeso(order.downPayment)} Using QRPH`;
 }
 
 function updatePage(order) {
@@ -202,7 +202,7 @@ async function syncCheckoutStatus(options = {}) {
 
     if (payload.paid) {
       clearStoredCheckoutSessionId(currentOrder.id);
-      showMessage('GCash payment confirmed. Your order down payment is now marked as paid.', 'success');
+      showMessage('QRPH payment confirmed. Your order down payment is now marked as paid.', 'success');
       return true;
     }
 
@@ -256,7 +256,7 @@ async function handleReturnFromCheckout() {
       showMessage('Payment submitted. We are still waiting for PayMongo confirmation, so please refresh again in a moment.', 'error');
     }
   } else if (paymongoState === 'cancelled') {
-    showMessage('GCash checkout was cancelled. You can try again whenever you are ready.', 'error');
+    showMessage('QRPH checkout was cancelled. You can try again whenever you are ready.', 'error');
   }
 }
 
@@ -283,15 +283,15 @@ async function startPaymongoCheckout() {
 
     const payload = await response.json();
     if (!response.ok) {
-      throw new Error(payload.error || 'Unable to start GCash checkout');
+      throw new Error(payload.error || 'Unable to start QRPH checkout');
     }
 
     setStoredCheckoutSessionId(currentOrder.id, payload.checkoutSessionId);
     window.location.href = payload.checkoutUrl;
   } catch (error) {
     payBtn.disabled = false;
-    payBtn.textContent = `Pay ${formatPeso(currentOrder.downPayment)} Using GCash`;
-    showMessage(error.message || 'Unable to open GCash checkout. Please try again.', 'error');
+    payBtn.textContent = `Pay ${formatPeso(currentOrder.downPayment)} Using QRPH`;
+    showMessage(error.message || 'Unable to open QRPH checkout. Please try again.', 'error');
   }
 }
 

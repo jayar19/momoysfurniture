@@ -143,7 +143,7 @@ async function finalizePaymongoDownPayment({ orderId, checkoutSessionId, checkou
       orderId: resolvedOrderId,
       userId: order.userId,
       amount,
-      paymentMethod: 'gcash',
+      paymentMethod: 'qrph',
       paymentType: 'down_payment',
       status: 'completed',
       provider: 'paymongo',
@@ -265,7 +265,7 @@ router.post('/paymongo/checkout-session', verifyToken, async (req, res) => {
             userId: req.user.uid,
             paymentType: 'down_payment'
           },
-          payment_method_types: ['gcash'],
+          payment_method_types: ['qrph'],
           send_email_receipt: false,
           show_description: true,
           show_line_items: true
