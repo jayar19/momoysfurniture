@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
+  <link rel="apple-touch-icon" href="/images/logo.png">
+  <title>Dashboard Detail - MOMOY'S Furniture Admin</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .metric-hero { margin-bottom: 2rem; }
+    .metric-hero h1 { margin: 0.8rem 0 0.5rem; }
+    .metric-hero p { color: #6b7280; max-width: 760px; }
+    .metric-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .metric-box {
+      background: #fff;
+      border-radius: 14px;
+      padding: 1.2rem 1.35rem;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    }
+    .metric-box h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #888;
+      margin-bottom: 0.5rem;
+    }
+    .metric-box p {
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <a href="/admin/dashboard.html" class="nav-brand">
+        <img src="/images/logo.png" alt="Momoy's Furniture Logo" class="nav-logo">
+        <span>Momoy's Furniture</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/admin/dashboard.html">Dashboard</a></li>
+        <li><a href="/admin/add-product.html">Add Product</a></li>
+        <li><a href="/admin/manage-orders.html">Manage Orders</a></li>
+        <li><a href="/" target="_blank">View Site</a></li>
+        <li><a href="#" id="logout-btn">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div id="metric-error" class="alert alert-error" style="display:none;"></div>
+
+    <div id="metric-content" style="display:none;">
+      <div class="metric-hero">
+        <a href="/admin/dashboard.html" class="btn btn-secondary">Back to Dashboard</a>
+        <h1 id="metric-title">Dashboard Detail</h1>
+        <p id="metric-description"></p>
+      </div>
+
+      <div class="metric-summary">
+        <div class="metric-box">
+          <h2 id="metric-summary-label"></h2>
+          <p id="metric-summary-value"></p>
+        </div>
+        <div class="metric-box">
+          <h2 id="metric-secondary-label"></h2>
+          <p id="metric-secondary-value"></p>
+        </div>
+      </div>
+
+      <h2 id="metric-table-title" style="margin-bottom: 1rem;"></h2>
+      <div class="data-table">
+        <table>
+          <thead id="metric-table-head"></thead>
+          <tbody id="metric-table-body">
+            <tr><td style="text-align:center;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/admin-metric-detail.js"></script>
+  <script src="/js/mobile-nav.js"></script>
+</body>
+</html>

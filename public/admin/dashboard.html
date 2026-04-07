@@ -16,16 +16,21 @@
     }
 
     .stat-card {
+      display: block;
       background: #fff;
       border-radius: 10px;
       padding: 1.25rem 1.5rem;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
       transition: transform 0.2s, box-shadow 0.2s;
+      text-decoration: none;
+      color: inherit;
+      border: 1px solid transparent;
     }
 
     .stat-card:hover {
       transform: translateY(-3px);
       box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+      border-color: rgba(44, 62, 80, 0.08);
     }
 
     .stat-card h3 {
@@ -71,50 +76,50 @@
     <!-- Dashboard Stats -->
     <div class="admin-stats">
 
-      <div class="stat-card">
+      <a class="stat-card" href="/admin/metric-detail.html?metric=total-earned">
         <h3>Total Earned</h3>
         <p id="total-earned">₱-</p>
-      </div>
-      <div class="stat-card">
+      </a>
+      <a class="stat-card" href="/admin/metric-detail.html?metric=completed-purchase">
         <h3>Completed Purchase</h3>
         <p id="completed-purchase">-</p>
-      </div>
-      <div class="stat-card">
+      </a>
+      <a class="stat-card" href="/admin/metric-detail.html?metric=receivable-amount">
         <h3>Receivable Amount</h3>
         <p id="receivable-amount">₱-</p>
-      </div>
-      <div class="stat-card">
+      </a>
+      <a class="stat-card" href="/admin/metric-detail.html?metric=approved-orders">
         <h3>Approved Orders</h3>
         <p id="approved-orders">-</p>
-      </div>
-      <div class="stat-card">
+      </a>
+      <a class="stat-card" href="/admin/metric-detail.html?metric=completed-orders">
         <h3>Completed Orders</h3>
         <p id="completed-orders">-</p>
-      </div>
-      <div class="stat-card">
+      </a>
+      <a class="stat-card" href="/admin/metric-detail.html?metric=pending-orders">
         <h3>Pending Orders</h3>
         <p id="pending-orders">-</p>
-      </div>
-      <div class="stat-card">
+      </a>
+      <a class="stat-card" href="/admin/metric-detail.html?metric=listed-products">
         <h3>Listed Products</h3>
         <p id="listed-products">-</p>
-      </div>
-      <div class="stat-card">
+      </a>
+      <a class="stat-card" href="/admin/metric-detail.html?metric=listed-brands">
         <h3>Listed Brands</h3>
         <p id="listed-brands">-</p>
-      </div>
-      <div class="stat-card">
+      </a>
+      <a class="stat-card" href="/admin/metric-detail.html?metric=registered-users">
         <h3>Registered Users</h3>
         <p id="registered-users">-</p>
-      </div>
-      <div class="stat-card">
+      </a>
+      <a class="stat-card" href="/admin/metric-detail.html?metric=queries">
         <h3>Queries</h3>
         <p id="total-queries">-</p>
-      </div>
-      <div class="stat-card">
+      </a>
+      <a class="stat-card" href="/admin/metric-detail.html?metric=testimonials">
         <h3>Testimonials</h3>
         <p id="total-testimonials">-</p>
-      </div>
+      </a>
 
     </div>
 
