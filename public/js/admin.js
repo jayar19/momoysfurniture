@@ -122,6 +122,7 @@ if (document.getElementById('add-product-form')) {
       price:       parseFloat(document.getElementById('price').value),
       category:    document.getElementById('category').value,
       imageUrl:    document.getElementById('imageUrl').value,
+      modelUrl:    document.getElementById('modelUrl')?.value?.trim() || 'models/sofa.glb',
       stock:       parseInt(document.getElementById('stock').value)
     };
 

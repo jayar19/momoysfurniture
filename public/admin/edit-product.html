@@ -193,6 +193,14 @@
           </small>
           <img id="image-preview" src="" alt="Product preview" style="max-width: 100%; max-height: 300px; display: none; border-radius: 10px; margin-top: 1rem;">
         </div>
+
+        <div class="form-group">
+          <label for="modelUrl">3D Model URL / .glb Path</label>
+          <input type="text" id="modelUrl" value="models/sofa.glb" placeholder="models/sofa.glb or https://example.com/model.glb">
+          <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">
+            Use a local website path or an external direct .glb link for this product's AR model.
+          </small>
+        </div>
         
         <div class="form-group">
           <label for="stock">Base Stock Quantity *</label>
@@ -271,6 +279,7 @@
         document.getElementById('price').value = product.price;
         document.getElementById('category').value = product.category;
         document.getElementById('imageUrl').value = product.imageUrl;
+        document.getElementById('modelUrl').value = product.modelUrl || 'models/sofa.glb';
         document.getElementById('stock').value = product.stock;
         
         // Show image preview
@@ -403,6 +412,7 @@
           price: parseFloat(document.getElementById('price').value),
           category: document.getElementById('category').value,
           imageUrl: document.getElementById('imageUrl').value,
+          modelUrl: document.getElementById('modelUrl').value.trim(),
           stock: parseInt(document.getElementById('stock').value)
         };
         

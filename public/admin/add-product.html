@@ -198,6 +198,14 @@
         </div>
 
         <div class="form-group">
+          <label for="modelUrl">3D Model URL / .glb Path</label>
+          <input type="text" id="modelUrl" value="models/sofa.glb" placeholder="models/sofa.glb or https://example.com/model.glb">
+          <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">
+            You can use a file inside the website like <code>models/sofa.glb</code> or an external direct .glb link.
+          </small>
+        </div>
+
+        <div class="form-group">
           <label for="stock">Base Stock Quantity *</label>
           <input type="number" id="stock" required min="0" placeholder="0">
           <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">
@@ -335,6 +343,7 @@
           price: parseFloat(document.getElementById('price').value),
           category: document.getElementById('category').value,
           imageUrl: document.getElementById('imageUrl').value,
+          modelUrl: document.getElementById('modelUrl').value.trim(),
           stock: parseInt(document.getElementById('stock').value)
         };
         
