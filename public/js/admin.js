@@ -1,4 +1,6 @@
 // Load dashboard statistics
+let activeAdminOrderChatId = null;
+
 async function loadDashboardStats() {
   console.log('Loading dashboard data...');
 
@@ -247,6 +249,7 @@ async function loadAdminOrders() {
           <td>${order.paymentStatus.replace('_', ' ')}</td>
           <td>
             <button class="btn btn-secondary" onclick="viewOrderDetails('${order.id}')" style="margin-bottom: 0.5rem; font-size: 0.85rem;">View</button>
+            <button class="btn btn-secondary" onclick="openAdminOrderChat('${order.id}')" style="margin-bottom: 0.5rem; font-size: 0.85rem;">Open Chat</button>
             <button class="btn btn-primary" onclick="openUpdateStatusModal('${order.id}', '${order.deliveryStatus}')" style="margin-bottom: 0.5rem; font-size: 0.85rem;">Update Status</button>
             <button class="btn btn-primary" onclick="openSetLocationModal('${order.id}')" style="font-size: 0.85rem;">Set Location</button>
           </td>
@@ -442,6 +445,161 @@ function closeModal() {
   const modal = document.getElementById('admin-modal');
   if (modal) modal.remove();
 }
+
+function escapeAdminChatHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatAdminChatTimestamp(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+}
+
+function renderAdminOrderChatMessages(messages) {
+  const thread = document.getElementById('admin-order-chat-thread');
+  const currentUser = auth.currentUser;
+  if (!thread) return;
+
+  if (!messages.length) {
+    thread.innerHTML = '<div class="chat-empty">No messages yet. Send the first order update here.</div>';
+    return;
+  }
+
+  thread.innerHTML = messages.map((message) => {
+    const isOwn = currentUser && message.senderId === currentUser.uid;
+    const senderLabel = isOwn ? 'You' : (message.senderRole === 'admin' ? 'Admin' : 'Customer');
+
+    return `
+      <div class="chat-message ${isOwn ? 'chat-own' : 'chat-other'}">
+        <div class="chat-meta">
+          <span>${escapeAdminChatHtml(senderLabel)}</span>
+          <span>${escapeAdminChatHtml(formatAdminChatTimestamp(message.createdAt))}</span>
+        </div>
+        <div class="chat-body">${escapeAdminChatHtml(message.message || '')}</div>
+      </div>
+    `;
+  }).join('');
+
+  thread.scrollTop = thread.scrollHeight;
+}
+
+async function loadAdminOrderChat(orderId) {
+  const thread = document.getElementById('admin-order-chat-thread');
+  if (!thread) return;
+
+  thread.innerHTML = '<div class="chat-empty">Loading messages...</div>';
+
+  try {
+    const response = await authenticatedFetch(`${API_BASE_URL}/orders/${orderId}/chat`);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Failed to load chat' }));
+      throw new Error(error.error || 'Failed to load chat');
+    }
+
+    const messages = await response.json();
+    renderAdminOrderChatMessages(messages);
+  } catch (error) {
+    thread.innerHTML = `<div class="chat-empty">${escapeAdminChatHtml(error.message)}</div>`;
+  }
+}
+
+async function openAdminOrderChat(orderId) {
+  activeAdminOrderChatId = orderId;
+
+  const modal = document.getElementById('admin-order-chat-modal');
+  const title = document.getElementById('admin-order-chat-title');
+  const subtitle = document.getElementById('admin-order-chat-subtitle');
+  const input = document.getElementById('admin-order-chat-input');
+
+  if (!modal || !title || !subtitle || !input) return;
+
+  title.textContent = `Order Chat #${orderId.substring(0, 8)}`;
+  subtitle.textContent = 'Reply directly to the customer about this specific order.';
+  input.value = '';
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+
+  await loadAdminOrderChat(orderId);
+  input.focus();
+}
+
+function closeAdminOrderChat() {
+  const modal = document.getElementById('admin-order-chat-modal');
+  if (!modal) return;
+
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  activeAdminOrderChatId = null;
+}
+
+async function submitAdminOrderChatMessage(event) {
+  event.preventDefault();
+  if (!activeAdminOrderChatId) return;
+
+  const input = document.getElementById('admin-order-chat-input');
+  const button = event.target.querySelector('button[type="submit"]');
+  const message = input.value.trim();
+
+  if (!message) return;
+
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Sending...';
+
+  try {
+    const response = await authenticatedFetch(`${API_BASE_URL}/orders/${activeAdminOrderChatId}/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ message })
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Failed to send message' }));
+      throw new Error(error.error || 'Failed to send message');
+    }
+
+    input.value = '';
+    await loadAdminOrderChat(activeAdminOrderChatId);
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
+const adminOrderChatModal = document.getElementById('admin-order-chat-modal');
+if (adminOrderChatModal) {
+  adminOrderChatModal.addEventListener('click', (event) => {
+    if (event.target === adminOrderChatModal) closeAdminOrderChat();
+  });
+}
+
+const adminOrderChatForm = document.getElementById('admin-order-chat-form');
+if (adminOrderChatForm) {
+  adminOrderChatForm.addEventListener('submit', submitAdminOrderChatMessage);
+}
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && document.getElementById('admin-order-chat-modal')?.classList.contains('open')) {
+    closeAdminOrderChat();
+  }
+});
 
 // Initialize based on page
 auth.onAuthStateChanged(user => {

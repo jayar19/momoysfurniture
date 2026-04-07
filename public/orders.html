@@ -183,9 +183,32 @@
     </div>
   </div>
 
+  <div id="order-chat-modal" class="chat-modal" aria-hidden="true">
+    <div class="chat-modal-card" role="dialog" aria-modal="true" aria-labelledby="order-chat-title">
+      <div class="chat-modal-header">
+        <div>
+          <div id="order-chat-title" class="chat-modal-title">Order Chat</div>
+          <div id="order-chat-subtitle" class="chat-modal-subtitle">Talk directly with the admin about this order.</div>
+        </div>
+        <button type="button" class="chat-close-btn" onclick="closeOrderChat()" aria-label="Close chat">&times;</button>
+      </div>
+      <div id="order-chat-thread" class="chat-thread">
+        <div class="chat-empty">Loading messages...</div>
+      </div>
+      <form id="order-chat-form" class="chat-modal-form">
+        <textarea id="order-chat-input" placeholder="Type your message about this order..." maxlength="1000" required></textarea>
+        <div class="chat-form-row">
+          <span class="chat-form-hint">Messages are saved under this specific order.</span>
+          <button type="submit" class="btn btn-primary">Send Message</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/config.js"></script>
   <script src="/js/firebase-config.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/orders.js"></script>

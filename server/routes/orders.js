@@ -6,6 +6,30 @@ const { verifyToken, verifyAdmin } = require('../middleware/auth');
 // Get db from admin
 const db = admin.firestore();
 
+async function getUserRole(uid) {
+  const userDoc = await db.collection('users').doc(uid).get();
+  if (!userDoc.exists) return 'customer';
+  return userDoc.data().role || 'customer';
+}
+
+async function getAccessibleOrder(orderId, uid) {
+  const doc = await db.collection('orders').doc(orderId).get();
+
+  if (!doc.exists) {
+    return { error: 'Order not found', status: 404 };
+  }
+
+  const orderData = doc.data();
+  const role = await getUserRole(uid);
+  const isAdmin = role === 'admin';
+
+  if (!isAdmin && orderData.userId !== uid) {
+    return { error: 'Access denied', status: 403 };
+  }
+
+  return { doc, orderData, isAdmin };
+}
+
 // Create order
 router.post('/', verifyToken, async (req, res) => {
   try {
@@ -59,18 +83,79 @@ router.get('/user/:userId', verifyToken, async (req, res) => {
 // Get single order
 router.get('/:id', verifyToken, async (req, res) => {
   try {
-    const doc = await db.collection('orders').doc(req.params.id).get();
-    
-    if (!doc.exists) {
-      return res.status(404).json({ error: 'Order not found' });
+    const result = await getAccessibleOrder(req.params.id, req.user.uid);
+    if (result.error) {
+      return res.status(result.status).json({ error: result.error });
     }
-    
-    const orderData = doc.data();
-    if (orderData.userId !== req.user.uid) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-    
+
+    const { doc, orderData } = result;
     res.json({ id: doc.id, ...orderData });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get order chat messages
+router.get('/:id/chat', verifyToken, async (req, res) => {
+  try {
+    const result = await getAccessibleOrder(req.params.id, req.user.uid);
+    if (result.error) {
+      return res.status(result.status).json({ error: result.error });
+    }
+
+    const snapshot = await db.collection('orders')
+      .doc(req.params.id)
+      .collection('messages')
+      .orderBy('createdAt', 'asc')
+      .get();
+
+    const messages = [];
+    snapshot.forEach(doc => {
+      messages.push({ id: doc.id, ...doc.data() });
+    });
+
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Send order chat message
+router.post('/:id/chat', verifyToken, async (req, res) => {
+  try {
+    const result = await getAccessibleOrder(req.params.id, req.user.uid);
+    if (result.error) {
+      return res.status(result.status).json({ error: result.error });
+    }
+
+    const messageText = (req.body.message || '').trim();
+    if (!messageText) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const role = result.isAdmin ? 'admin' : 'customer';
+    const messageData = {
+      orderId: req.params.id,
+      senderId: req.user.uid,
+      senderEmail: req.user.email || '',
+      senderRole: role,
+      message: messageText,
+      createdAt: new Date().toISOString()
+    };
+
+    const docRef = await db.collection('orders')
+      .doc(req.params.id)
+      .collection('messages')
+      .add(messageData);
+
+    await db.collection('orders').doc(req.params.id).update({
+      chatUpdatedAt: messageData.createdAt,
+      lastChatMessage: messageText.slice(0, 160),
+      lastChatSenderRole: role,
+      updatedAt: new Date().toISOString()
+    });
+
+    res.status(201).json({ id: docRef.id, ...messageData });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

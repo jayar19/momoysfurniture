@@ -1,4 +1,6 @@
 // Load user orders
+let activeOrderChatId = null;
+
 async function loadUserOrders() {
   const user = auth.currentUser;
 
@@ -185,6 +187,7 @@ function displayOrders(orders) {
             ${!downPaymentSettled ? `
               <a href="/payment.html?orderId=${order.id}" class="btn btn-primary">Pay Down Payment (GCash)</a>
             ` : ''}
+            <button class="btn btn-secondary" onclick="openOrderChat('${order.id}')">Chat About Order</button>
             ${order.currentLocation ? `
               <a href="/track-delivery.html?orderId=${order.id}" class="btn btn-primary">📍 Track Delivery</a>
             ` : `
@@ -297,6 +300,161 @@ function showMessage(message, type) {
     messageDiv.style.display = 'none';
   }, 3000);
 }
+
+function formatChatTimestamp(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+}
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderOrderChatMessages(messages) {
+  const thread = document.getElementById('order-chat-thread');
+  const currentUser = auth.currentUser;
+  if (!thread) return;
+
+  if (!messages.length) {
+    thread.innerHTML = '<div class="chat-empty">No messages yet. Start the conversation for this order.</div>';
+    return;
+  }
+
+  thread.innerHTML = messages.map((message) => {
+    const isOwn = currentUser && message.senderId === currentUser.uid;
+    const senderLabel = isOwn ? 'You' : (message.senderRole === 'admin' ? 'Admin' : 'Customer');
+
+    return `
+      <div class="chat-message ${isOwn ? 'chat-own' : 'chat-other'}">
+        <div class="chat-meta">
+          <span>${escapeHtml(senderLabel)}</span>
+          <span>${escapeHtml(formatChatTimestamp(message.createdAt))}</span>
+        </div>
+        <div class="chat-body">${escapeHtml(message.message || '')}</div>
+      </div>
+    `;
+  }).join('');
+
+  thread.scrollTop = thread.scrollHeight;
+}
+
+async function loadOrderChat(orderId) {
+  const thread = document.getElementById('order-chat-thread');
+  if (!thread) return;
+
+  thread.innerHTML = '<div class="chat-empty">Loading messages...</div>';
+
+  try {
+    const response = await authenticatedFetch(`/orders/${orderId}/chat`);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Failed to load chat' }));
+      throw new Error(error.error || 'Failed to load chat');
+    }
+
+    const messages = await response.json();
+    renderOrderChatMessages(messages);
+  } catch (error) {
+    thread.innerHTML = `<div class="chat-empty">${escapeHtml(error.message)}</div>`;
+  }
+}
+
+async function openOrderChat(orderId) {
+  activeOrderChatId = orderId;
+
+  const modal = document.getElementById('order-chat-modal');
+  const title = document.getElementById('order-chat-title');
+  const subtitle = document.getElementById('order-chat-subtitle');
+  const input = document.getElementById('order-chat-input');
+
+  if (!modal || !title || !subtitle || !input) return;
+
+  title.textContent = `Order Chat #${orderId.substring(0, 8)}`;
+  subtitle.textContent = 'Talk directly with the admin about updates, delivery, and questions for this order.';
+  input.value = '';
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+
+  await loadOrderChat(orderId);
+  input.focus();
+}
+
+function closeOrderChat() {
+  const modal = document.getElementById('order-chat-modal');
+  if (!modal) return;
+
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  activeOrderChatId = null;
+}
+
+async function submitOrderChatMessage(event) {
+  event.preventDefault();
+  if (!activeOrderChatId) return;
+
+  const input = document.getElementById('order-chat-input');
+  const button = event.target.querySelector('button[type="submit"]');
+  const message = input.value.trim();
+
+  if (!message) return;
+
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Sending...';
+
+  try {
+    const response = await authenticatedFetch(`/orders/${activeOrderChatId}/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ message })
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Failed to send message' }));
+      throw new Error(error.error || 'Failed to send message');
+    }
+
+    input.value = '';
+    await loadOrderChat(activeOrderChatId);
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
+const orderChatModal = document.getElementById('order-chat-modal');
+if (orderChatModal) {
+  orderChatModal.addEventListener('click', (event) => {
+    if (event.target === orderChatModal) closeOrderChat();
+  });
+}
+
+const orderChatForm = document.getElementById('order-chat-form');
+if (orderChatForm) {
+  orderChatForm.addEventListener('submit', submitOrderChatMessage);
+}
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && document.getElementById('order-chat-modal')?.classList.contains('open')) {
+    closeOrderChat();
+  }
+});
 
 // Initialize - wait for backend and auth
 if (document.getElementById('orders-container')) {

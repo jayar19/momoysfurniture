@@ -114,6 +114,28 @@
     </div>
   </div>
 
+  <div id="admin-order-chat-modal" class="chat-modal" aria-hidden="true">
+    <div class="chat-modal-card" role="dialog" aria-modal="true" aria-labelledby="admin-order-chat-title">
+      <div class="chat-modal-header">
+        <div>
+          <div id="admin-order-chat-title" class="chat-modal-title">Order Chat</div>
+          <div id="admin-order-chat-subtitle" class="chat-modal-subtitle">Reply directly to the customer for this order.</div>
+        </div>
+        <button type="button" class="chat-close-btn" onclick="closeAdminOrderChat()" aria-label="Close chat">&times;</button>
+      </div>
+      <div id="admin-order-chat-thread" class="chat-thread">
+        <div class="chat-empty">Loading messages...</div>
+      </div>
+      <form id="admin-order-chat-form" class="chat-modal-form">
+        <textarea id="admin-order-chat-input" placeholder="Send a message to the customer about this order..." maxlength="1000" required></textarea>
+        <div class="chat-form-row">
+          <span class="chat-form-hint">Use this thread for order-specific updates and clarifications.</span>
+          <button type="submit" class="btn btn-primary">Send Message</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
