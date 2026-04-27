@@ -1,5 +1,8 @@
 // Load user orders
+const ORDER_AI_STORAGE_KEY = 'momoysOrderAiSessions';
 let activeOrderChatId = null;
+let loadedOrders = [];
+let orderAiSessions = loadOrderAiSessions();
 
 async function loadUserOrders() {
   const user = auth.currentUser;
@@ -55,6 +58,7 @@ async function loadUserOrders() {
     }
     
     const orders = JSON.parse(responseText);
+    loadedOrders = Array.isArray(orders) ? orders : [];
     console.log('Orders received:', orders.length);
     console.log('Orders data:', orders);
     
@@ -93,6 +97,7 @@ function displayOrders(orders) {
   const container = document.getElementById('orders-container');
   
   if (!container) return;
+  loadedOrders = Array.isArray(orders) ? orders : [];
   
   if (orders.length === 0) {
     container.innerHTML = `
@@ -301,6 +306,235 @@ function showMessage(message, type) {
   }, 3000);
 }
 
+function loadOrderAiSessions() {
+  try {
+    const raw = sessionStorage.getItem(ORDER_AI_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (error) {
+    console.warn('Failed to load AI order sessions:', error);
+    return {};
+  }
+}
+
+function saveOrderAiSessions() {
+  try {
+    sessionStorage.setItem(ORDER_AI_STORAGE_KEY, JSON.stringify(orderAiSessions));
+  } catch (error) {
+    console.warn('Failed to save AI order sessions:', error);
+  }
+}
+
+function getOrderById(orderId) {
+  return loadedOrders.find((order) => order.id === orderId) || null;
+}
+
+function formatPeso(value) {
+  return new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    minimumFractionDigits: 2
+  }).format(Number(value) || 0);
+}
+
+function toTitleCase(value = '') {
+  return String(value)
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatOrderStatusText(order) {
+  if (!order) return 'Unknown';
+  const statusInfo = getStatusInfo(order.deliveryStatus);
+  return statusInfo.label.replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function summarizeOrderItems(order) {
+  if (!order?.items?.length) return 'No items were found on this order.';
+
+  return order.items
+    .map((item) => {
+      const variant = item.variantName && item.variantName !== 'Standard'
+        ? ` (${item.variantName})`
+        : '';
+      return `${item.productName} x${item.quantity}${variant}`;
+    })
+    .join(', ');
+}
+
+function getOrderAiSuggestions(order) {
+  const suggestions = [
+    'What is my order status?',
+    'When will this be delivered?',
+    'How much do I still need to pay?',
+    'What items are in this order?'
+  ];
+
+  if (order?.currentLocation || order?.deliveryStatus === 'in_transit') {
+    suggestions.unshift('Where is my order right now?');
+  }
+
+  return suggestions.slice(0, 5);
+}
+
+function ensureOrderAiSession(orderId) {
+  if (!orderAiSessions[orderId]) {
+    orderAiSessions[orderId] = [];
+  }
+  return orderAiSessions[orderId];
+}
+
+function appendOrderAiMessage(orderId, role, message) {
+  const session = ensureOrderAiSession(orderId);
+  session.push({
+    role,
+    message,
+    createdAt: new Date().toISOString()
+  });
+  saveOrderAiSessions();
+}
+
+function renderOrderAiSuggestions(order) {
+  const suggestionsContainer = document.getElementById('order-ai-suggestions');
+  if (!suggestionsContainer) return;
+
+  const questions = getOrderAiSuggestions(order);
+  suggestionsContainer.innerHTML = questions.map((question) => `
+    <button type="button" class="order-ai-chip" data-question="${escapeHtml(question)}">
+      ${escapeHtml(question)}
+    </button>
+  `).join('');
+}
+
+function renderOrderAiThread(orderId) {
+  const thread = document.getElementById('order-ai-thread');
+  if (!thread) return;
+
+  const messages = ensureOrderAiSession(orderId);
+  if (!messages.length) {
+    thread.innerHTML = '<div class="chat-empty">Ask a question and the assistant will answer using this order\'s current details.</div>';
+    return;
+  }
+
+  thread.innerHTML = messages.map((message) => {
+    const isUser = message.role === 'user';
+    const roleLabel = isUser ? 'You' : 'Momoy Assistant';
+
+    return `
+      <div class="chat-message ${isUser ? 'chat-own' : 'chat-other chat-ai'}">
+        <div class="chat-meta">
+          <span>${escapeHtml(roleLabel)}</span>
+          <span>${escapeHtml(formatChatTimestamp(message.createdAt))}</span>
+        </div>
+        <div class="chat-body">${escapeHtml(message.message || '')}</div>
+      </div>
+    `;
+  }).join('');
+
+  thread.scrollTop = thread.scrollHeight;
+}
+
+function buildOrderAssistantReply(order, question) {
+  if (!order) {
+    return 'I could not find the latest details for this order. Please refresh the page and try again.';
+  }
+
+  const normalizedQuestion = String(question || '').toLowerCase();
+  const statusText = formatOrderStatusText(order);
+  const deliveryDate = order.estimatedDelivery
+    ? new Date(order.estimatedDelivery).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    : null;
+  const paymentStatus = toTitleCase(order.paymentStatus || 'pending');
+  const remainingBalance = Number(order.remainingBalance) || 0;
+  const downPaymentSettled = order.paymentStatus === 'down_payment_paid' || order.paymentStatus === 'fully_paid' || order.paymentStatus === 'paid';
+  const fullyPaid = order.paymentStatus === 'fully_paid' || order.paymentStatus === 'paid';
+  const itemsSummary = summarizeOrderItems(order);
+
+  if (/(where|track|location|driver|map)/.test(normalizedQuestion)) {
+    if (order.currentLocation) {
+      return `Your order is currently marked as ${statusText}. Live delivery tracking is available for this order, so you can use the Track Delivery button for the latest location update.`;
+    }
+
+    if (order.deliveryStatus === 'in_transit') {
+      return 'Your order is already in transit, but a live location has not been shared yet. Send a message to the admin below if you need the latest delivery update.';
+    }
+
+    return `Your order is currently ${statusText}. Tracking becomes available once the delivery team shares a live location for this order.`;
+  }
+
+  if (/(when|deliver|delivery|arrive|arrival|eta)/.test(normalizedQuestion)) {
+    if (deliveryDate) {
+      return `The current estimated delivery date for this order is ${deliveryDate}. Its present delivery stage is ${statusText}.`;
+    }
+
+    if (order.deliveryStatus === 'delivered') {
+      return 'This order is already marked as delivered.';
+    }
+
+    return `This order is currently ${statusText}. A delivery date has not been posted yet, so the admin will need to confirm the schedule if you need a more exact timeline.`;
+  }
+
+  if (/(pay|payment|balance|down payment|gcash|paid|amount)/.test(normalizedQuestion)) {
+    if (fullyPaid) {
+      return `This order is already fully paid. Total paid: ${formatPeso(order.totalAmount)}.`;
+    }
+
+    if (downPaymentSettled) {
+      return `Your down payment of ${formatPeso(order.downPayment)} is already marked as paid. The remaining balance is ${formatPeso(remainingBalance)} and the payment status is ${paymentStatus}.`;
+    }
+
+    return `The total amount is ${formatPeso(order.totalAmount)}. The required down payment is ${formatPeso(order.downPayment)}, and it is still marked as pending.`;
+  }
+
+  if (/(status|progress|update|stage|confirmed|processing|transit|delivered)/.test(normalizedQuestion)) {
+    const deliveryLine = deliveryDate ? ` The current estimated delivery date is ${deliveryDate}.` : '';
+    return `Your order status is ${toTitleCase(order.status || 'pending')} and the delivery stage is ${statusText}.${deliveryLine}`;
+  }
+
+  if (/(item|product|ordered|order details|what did i order|include)/.test(normalizedQuestion)) {
+    return `This order includes ${itemsSummary}. The total order amount is ${formatPeso(order.totalAmount)}.`;
+  }
+
+  if (/(address|shipping|deliver to|location change|change address)/.test(normalizedQuestion)) {
+    const address = order.shippingAddress || 'No shipping address is currently saved for this order.';
+    return `The shipping address on this order is: ${address} If you need to change it, please message the admin below so they can confirm whether the update is still possible.`;
+  }
+
+  if (/(cancel|refund|return|change order|edit order|reschedule|move delivery)/.test(normalizedQuestion)) {
+    return 'Requests like cancellations, returns, schedule changes, or order edits usually need manual approval. Please send the details to the admin in the order conversation below.';
+  }
+
+  if (/(contact|admin|support|message|talk to someone)/.test(normalizedQuestion)) {
+    return 'You can send a message in the admin conversation below. That thread is saved under this order so the store can reply with order-specific help.';
+  }
+
+  return `Here is a quick summary: this order is currently ${statusText}, the payment status is ${paymentStatus}, and the remaining balance is ${formatPeso(remainingBalance)}. You can ask me about delivery, tracking, payment, address, or the items in this order.`;
+}
+
+function askOrderAssistant(question) {
+  if (!activeOrderChatId) return;
+
+  const trimmedQuestion = String(question || '').trim();
+  if (!trimmedQuestion) {
+    alert('Type a question first so the assistant has something to answer.');
+    return;
+  }
+
+  const order = getOrderById(activeOrderChatId);
+  appendOrderAiMessage(activeOrderChatId, 'user', trimmedQuestion);
+  appendOrderAiMessage(activeOrderChatId, 'assistant', buildOrderAssistantReply(order, trimmedQuestion));
+  renderOrderAiThread(activeOrderChatId);
+
+  const input = document.getElementById('order-chat-input');
+  if (input) {
+    input.value = '';
+    input.focus();
+  }
+}
+
 function formatChatTimestamp(value) {
   if (!value) return '';
   const date = new Date(value);
@@ -383,12 +617,14 @@ async function openOrderChat(orderId) {
   if (!modal || !title || !subtitle || !input) return;
 
   title.textContent = `Order Chat #${orderId.substring(0, 8)}`;
-  subtitle.textContent = 'Talk directly with the admin about updates, delivery, and questions for this order.';
+  subtitle.textContent = 'Ask the order assistant for quick answers or message the admin for custom help.';
   input.value = '';
   modal.classList.add('open');
   modal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
 
+  renderOrderAiSuggestions(getOrderById(orderId));
+  renderOrderAiThread(orderId);
   await loadOrderChat(orderId);
   input.focus();
 }
@@ -401,6 +637,13 @@ function closeOrderChat() {
   modal.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
   activeOrderChatId = null;
+
+  const suggestionsContainer = document.getElementById('order-ai-suggestions');
+  const thread = document.getElementById('order-ai-thread');
+  if (suggestionsContainer) suggestionsContainer.innerHTML = '';
+  if (thread) {
+    thread.innerHTML = '<div class="chat-empty">Ask a question and the assistant will answer using this order\'s current details.</div>';
+  }
 }
 
 async function submitOrderChatMessage(event) {
@@ -448,6 +691,23 @@ if (orderChatModal) {
 const orderChatForm = document.getElementById('order-chat-form');
 if (orderChatForm) {
   orderChatForm.addEventListener('submit', submitOrderChatMessage);
+}
+
+const orderChatAiButton = document.getElementById('order-chat-ai-btn');
+if (orderChatAiButton) {
+  orderChatAiButton.addEventListener('click', () => {
+    const input = document.getElementById('order-chat-input');
+    askOrderAssistant(input?.value || '');
+  });
+}
+
+const orderAiSuggestions = document.getElementById('order-ai-suggestions');
+if (orderAiSuggestions) {
+  orderAiSuggestions.addEventListener('click', (event) => {
+    const button = event.target.closest('.order-ai-chip');
+    if (!button) return;
+    askOrderAssistant(button.dataset.question || '');
+  });
 }
 
 document.addEventListener('keydown', (event) => {

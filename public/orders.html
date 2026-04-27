@@ -188,18 +188,34 @@
       <div class="chat-modal-header">
         <div>
           <div id="order-chat-title" class="chat-modal-title">Order Chat</div>
-          <div id="order-chat-subtitle" class="chat-modal-subtitle">Talk directly with the admin about this order.</div>
+          <div id="order-chat-subtitle" class="chat-modal-subtitle">Ask the order assistant for quick answers or message the admin for custom help.</div>
         </div>
         <button type="button" class="chat-close-btn" onclick="closeOrderChat()" aria-label="Close chat">&times;</button>
       </div>
+      <div class="order-ai-panel">
+        <div class="order-ai-panel-header">
+          <div>
+            <div class="order-ai-title">Order Assistant</div>
+            <div class="order-ai-subtitle">Get instant answers about status, delivery, payment, and the items in this order.</div>
+          </div>
+        </div>
+        <div id="order-ai-suggestions" class="order-ai-suggestions" aria-label="Suggested questions"></div>
+        <div id="order-ai-thread" class="order-ai-thread" aria-live="polite">
+          <div class="chat-empty">Ask a question and the assistant will answer using this order's current details.</div>
+        </div>
+      </div>
+      <div class="chat-section-label">Conversation with Admin</div>
       <div id="order-chat-thread" class="chat-thread">
         <div class="chat-empty">Loading messages...</div>
       </div>
       <form id="order-chat-form" class="chat-modal-form">
         <textarea id="order-chat-input" placeholder="Type your message about this order..." maxlength="1000" required></textarea>
         <div class="chat-form-row">
-          <span class="chat-form-hint">Messages are saved under this specific order.</span>
-          <button type="submit" class="btn btn-primary">Send Message</button>
+          <span class="chat-form-hint">Use Ask AI for quick FAQs. Use Send Message for questions that need the admin.</span>
+          <div class="chat-form-actions">
+            <button type="button" id="order-chat-ai-btn" class="btn btn-secondary">Ask AI</button>
+            <button type="submit" class="btn btn-primary">Send Message</button>
+          </div>
         </div>
       </form>
     </div>
