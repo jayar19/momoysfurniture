@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
+  <link rel="apple-touch-icon" href="/images/logo.png">
+  <title>Order Chat - MOMOY'S Furniture</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .order-chat-page {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .order-chat-hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .order-chat-hero p {
+      color: #6b7280;
+      max-width: 700px;
+      margin-top: 0.35rem;
+    }
+
+    .order-chat-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .order-chat-summary,
+    .order-chat-section {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+      border: 1px solid rgba(189, 199, 207, 0.45);
+    }
+
+    .order-chat-summary {
+      padding: 1.2rem 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .order-chat-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .summary-label {
+      color: #7f8c8d;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .summary-value {
+      color: #2c3e50;
+      font-size: 1.02rem;
+      font-weight: 700;
+      margin-top: 0.25rem;
+    }
+
+    .summary-address,
+    .summary-items {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #ecf0f1;
+    }
+
+    .summary-address p,
+    .summary-items p {
+      color: #4b5563;
+      margin-top: 0.35rem;
+      white-space: pre-line;
+    }
+
+    .order-chat-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .order-chat-section {
+      padding: 1rem;
+      min-height: 620px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .order-chat-section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 0.95rem;
+    }
+
+    .order-chat-section-header p {
+      color: #6b7280;
+      font-size: 0.93rem;
+      margin-top: 0.3rem;
+    }
+
+    .order-ai-thread-page,
+    .admin-chat-thread-page {
+      flex: 1;
+      min-height: 300px;
+      border-radius: 16px;
+    }
+
+    .order-ai-form,
+    .admin-chat-form-page {
+      margin-top: 0.95rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .order-ai-form textarea,
+    .admin-chat-form-page textarea {
+      width: 100%;
+      min-height: 110px;
+      resize: vertical;
+      border: 1px solid #d0d7de;
+      border-radius: 14px;
+      padding: 0.9rem 1rem;
+      font: inherit;
+      background: #fff;
+    }
+
+    .order-ai-form textarea:focus,
+    .admin-chat-form-page textarea:focus {
+      outline: none;
+      border-color: #2c3e50;
+      box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.12);
+    }
+
+    .section-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .section-hint {
+      color: #7f8c8d;
+      font-size: 0.84rem;
+    }
+
+    .section-button-row {
+      display: flex;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }
+
+    #page-message {
+      display: none;
+      margin-bottom: 1rem;
+    }
+
+    #order-chat-loading {
+      padding: 2.2rem 1rem;
+      text-align: center;
+    }
+
+    @media (max-width: 920px) {
+      .order-chat-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .order-chat-section {
+        min-height: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <a href="/" class="nav-brand">
+        <img src="/images/logo.png" alt="Momoy's Furniture Logo" class="nav-logo">
+        <span>Momoy's Furniture</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/products.html">Products</a></li>
+        <li><a href="/cart.html">Cart (<span id="cart-count">0</span>)</a></li>
+        <li><a href="/orders.html">My Orders</a></li>
+        <li><a href="#" id="logout-btn">Log Out</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container order-chat-page">
+    <div class="order-chat-hero">
+      <div>
+        <h1>Order Support</h1>
+        <p>Use the assistant for fast answers about this order, then continue with the admin thread if you need changes, approvals, or manual help.</p>
+      </div>
+      <div class="order-chat-actions">
+        <a href="/orders.html" class="btn btn-secondary">Back to My Orders</a>
+        <a id="track-delivery-link" href="#" class="btn btn-secondary" style="display: none;">Track Delivery</a>
+        <a id="payment-link" href="#" class="btn btn-primary" style="display: none;">Go to Payment</a>
+      </div>
+    </div>
+
+    <div id="page-message" class="alert"></div>
+
+    <div id="order-chat-loading" class="order-chat-summary">
+      <div class="spinner"></div>
+      <p style="margin-top: 0.85rem; color: #7f8c8d;">Loading order support details...</p>
+    </div>
+
+    <div id="order-chat-content" style="display: none;">
+      <section class="order-chat-summary">
+        <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; flex-wrap: wrap;">
+          <div>
+            <div class="summary-label">Order</div>
+            <div id="order-id-text" class="summary-value">-</div>
+          </div>
+          <span id="order-status-badge" class="order-status status-pending">Loading</span>
+        </div>
+
+        <div class="order-chat-summary-grid">
+          <div>
+            <div class="summary-label">Delivery Stage</div>
+            <div id="delivery-stage-text" class="summary-value">-</div>
+          </div>
+          <div>
+            <div class="summary-label">Payment Status</div>
+            <div id="payment-status-text" class="summary-value">-</div>
+          </div>
+          <div>
+            <div class="summary-label">Total Amount</div>
+            <div id="total-amount-text" class="summary-value">-</div>
+          </div>
+          <div>
+            <div class="summary-label">Remaining Balance</div>
+            <div id="remaining-balance-text" class="summary-value">-</div>
+          </div>
+          <div>
+            <div class="summary-label">Estimated Delivery</div>
+            <div id="estimated-delivery-text" class="summary-value">-</div>
+          </div>
+        </div>
+
+        <div class="summary-items">
+          <div class="summary-label">Items in This Order</div>
+          <p id="items-summary-text">-</p>
+        </div>
+
+        <div class="summary-address">
+          <div class="summary-label">Shipping Address</div>
+          <p id="shipping-address-text">-</p>
+        </div>
+      </section>
+
+      <div class="order-chat-layout">
+        <section class="order-chat-section">
+          <div class="order-chat-section-header">
+            <div>
+              <div class="order-ai-title">Order Assistant</div>
+              <p>Ask common questions about delivery, payment, tracking, address, and the items in this order.</p>
+            </div>
+          </div>
+
+          <div id="order-ai-suggestions" class="order-ai-suggestions" aria-label="Suggested questions"></div>
+          <div id="order-ai-thread" class="chat-thread order-ai-thread-page" aria-live="polite">
+            <div class="chat-empty">Ask about this order and the assistant will answer from the latest order details.</div>
+          </div>
+
+          <form id="order-ai-form" class="order-ai-form">
+            <textarea id="order-ai-input" placeholder="Ask a question about this order..." maxlength="1000" required></textarea>
+            <div class="section-actions">
+              <span class="section-hint">Best for FAQs and quick order summaries.</span>
+              <div class="section-button-row">
+                <button type="submit" class="btn btn-secondary">Ask Assistant</button>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <section class="order-chat-section">
+          <div class="order-chat-section-header">
+            <div>
+              <div class="chat-section-label" style="padding: 0;">Conversation with Admin</div>
+              <p>Use this thread for approval requests, delivery changes, and anything that needs a human reply.</p>
+            </div>
+            <button type="button" id="refresh-order-chat-btn" class="btn btn-secondary">Refresh Chat</button>
+          </div>
+
+          <div id="order-chat-thread" class="chat-thread admin-chat-thread-page">
+            <div class="chat-empty">Loading messages...</div>
+          </div>
+
+          <form id="order-chat-form" class="admin-chat-form-page">
+            <textarea id="order-chat-input" placeholder="Type your message to the admin..." maxlength="1000" required></textarea>
+            <div class="section-actions">
+              <span class="section-hint">Messages here are saved under this specific order.</span>
+              <div class="section-button-row">
+                <button type="submit" class="btn btn-primary">Send Message</button>
+              </div>
+            </div>
+          </form>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/order-chat.js"></script>
+  <script src="/js/mobile-nav.js"></script>
+  <script>
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        logoutUser();
+      });
+    }
+  </script>
+</body>
+</html>

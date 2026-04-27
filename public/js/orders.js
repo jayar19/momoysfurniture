@@ -192,7 +192,7 @@ function displayOrders(orders) {
             ${!downPaymentSettled ? `
               <a href="/payment.html?orderId=${order.id}" class="btn btn-primary">Pay Down Payment (GCash)</a>
             ` : ''}
-            <button class="btn btn-secondary" onclick="openOrderChat('${order.id}')">Chat About Order</button>
+            <a href="/order-chat.html?orderId=${order.id}" class="btn btn-secondary">Open Order Chat</a>
             ${order.currentLocation ? `
               <a href="/track-delivery.html?orderId=${order.id}" class="btn btn-primary">📍 Track Delivery</a>
             ` : `
