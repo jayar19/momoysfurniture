@@ -216,38 +216,37 @@
     }
 .toggle-password {
   position: absolute;
+  top: 50%;
   right: 10px;
-  border: none;
-  outline: none;
-  background: rgba(255,255,255,0.18);
+  transform: translateY(-50%);
+
+  height: 32px;
+  padding: 0 14px;
+
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+
+  background: rgba(255,255,255,0.2);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 
   color: #fff;
-  padding: 6px 14px;
-  border-radius: 20px;
-
   font-size: 0.85rem;
   font-weight: 600;
-  letter-spacing: 0.3px;
 
   cursor: pointer;
   transition: all 0.3s ease;
-
-  border: 1px solid rgba(255,255,255,0.25);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-/* HOVER EFFECT */
+/* HOVER */
 .toggle-password:hover {
-  background: rgba(255,255,255,0.28);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+  background: rgba(255,255,255,0.3);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
 }
 
-/* CLICK EFFECT */
+/* CLICK */
 .toggle-password:active {
-  transform: scale(0.96);
+  transform: translateY(-50%) scale(0.96);
 }
   </style>
 </head>
