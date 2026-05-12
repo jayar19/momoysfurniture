@@ -17,24 +17,6 @@
       height: 100vh;
     }
 
-    #camera-feed {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      z-index: 0;
-    }
-
-    #ar-canvas {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1;
-      pointer-events: none;
-    }
-
     #ui {
       position: fixed;
       inset: 0;
@@ -395,9 +377,6 @@
   </style>
 </head>
 <body>
-  <video id="camera-feed" autoplay playsinline muted></video>
-  <canvas id="ar-canvas"></canvas>
-
   <div id="ui">
     <div id="topbar">
       <button id="back-btn" onclick="history.back()">Back</button>
@@ -459,11 +438,6 @@
     <button id="retry-btn" onclick="location.reload()">Allow and Retry</button>
   </div>
 
-  <div id="loading-screen">
-    <div class="spinner"></div>
-    <p>Starting camera...</p>
-  </div>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
 
@@ -477,8 +451,6 @@
     const HIRO_URL = 'https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/data/images/hiro.png';
     document.getElementById('marker-img').src = HIRO_URL;
 
-    const video = document.getElementById('camera-feed');
-    const loading = document.getElementById('loading-screen');
     const errorScreen = document.getElementById('error-screen');
     const statusDot = document.getElementById('status-dot');
     const statusText = document.getElementById('status-text');
@@ -493,37 +465,7 @@
     let rotY = 0;
     let rotTimer = null;
     let baseDimensions = null;
-    let dimensionLabelRoot = null;
-    let dimensionLabelPlane = null;
-    let dimensionCanvas = null;
-    let dimensionCanvasTexture = null;
-    let dimensionCanvasContext = null;
-
-    async function startCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          },
-          audio: false
-        });
-
-        video.srcObject = stream;
-        video.onloadedmetadata = () => {
-          video.play();
-          loading.style.display = 'none';
-          statusText.textContent = 'Point camera at Hiro marker';
-        };
-      } catch (err) {
-        console.error('Camera error:', err);
-        loading.style.display = 'none';
-        errorScreen.style.display = 'flex';
-      }
-    }
-
-    startCamera();
+    statusText.textContent = 'Point camera at Hiro marker';
 
     function getObj() {
       return document.getElementById('ar-obj');
@@ -561,7 +503,6 @@
     function updateDimensionDisplay() {
       if (!baseDimensions) {
         setDimensionText('--', '--', '--', 'Waiting for model size...');
-        updateFloatingDimensionLabel(null);
         return;
       }
 
@@ -574,105 +515,6 @@
         height,
         `Updates automatically as you resize the model. Scale: ${currentScale.toFixed(2)}x`
       );
-      updateFloatingDimensionLabel({ width, length, height });
-    }
-
-    function createFloatingDimensionLabel(marker) {
-      const root = document.createElement('a-entity');
-      root.setAttribute('position', '0 1 0');
-      root.setAttribute('rotation', '0 0 0');
-      root.setAttribute('visible', 'false');
-      root.id = 'dimension-label-root';
-
-      const plane = document.createElement('a-plane');
-      plane.setAttribute('width', '2.25');
-      plane.setAttribute('height', '0.85');
-      plane.setAttribute('position', '0 0 0');
-      plane.setAttribute('material', 'shader: flat; transparent: true; opacity: 1; side: double;');
-      root.appendChild(plane);
-
-      marker.appendChild(root);
-      dimensionLabelRoot = root;
-      dimensionLabelPlane = plane;
-
-      dimensionCanvas = document.createElement('canvas');
-      dimensionCanvas.width = 1024;
-      dimensionCanvas.height = 384;
-      dimensionCanvasContext = dimensionCanvas.getContext('2d');
-      dimensionCanvasTexture = new THREE.CanvasTexture(dimensionCanvas);
-      dimensionCanvasTexture.needsUpdate = true;
-
-      plane.addEventListener('loaded', () => {
-        const mesh = plane.getObject3D('mesh');
-        if (mesh && mesh.material) {
-          mesh.material.map = dimensionCanvasTexture;
-          mesh.material.transparent = true;
-          mesh.material.needsUpdate = true;
-        }
-        drawDimensionCanvas(['Loading size...']);
-      });
-    }
-
-    function drawDimensionCanvas(lines) {
-      if (!dimensionCanvasContext || !dimensionCanvasTexture) return;
-
-      const ctx = dimensionCanvasContext;
-      const width = dimensionCanvas.width;
-      const height = dimensionCanvas.height;
-
-      ctx.clearRect(0, 0, width, height);
-
-      ctx.fillStyle = 'rgba(17, 17, 17, 0.82)';
-      ctx.strokeStyle = 'rgba(255, 218, 26, 0.9)';
-      ctx.lineWidth = 10;
-
-      const radius = 40;
-      ctx.beginPath();
-      ctx.moveTo(radius, 0);
-      ctx.lineTo(width - radius, 0);
-      ctx.quadraticCurveTo(width, 0, width, radius);
-      ctx.lineTo(width, height - radius);
-      ctx.quadraticCurveTo(width, height, width - radius, height);
-      ctx.lineTo(radius, height);
-      ctx.quadraticCurveTo(0, height, 0, height - radius);
-      ctx.lineTo(0, radius);
-      ctx.quadraticCurveTo(0, 0, radius, 0);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = '#FFDA1A';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.font = 'bold 92px Arial';
-
-      const lineGap = 104;
-      const startY = (height / 2) - (((lines.length - 1) * lineGap) / 2);
-      lines.forEach((line, index) => {
-        ctx.fillText(line, width / 2, startY + (index * lineGap));
-      });
-
-      dimensionCanvasTexture.needsUpdate = true;
-    }
-
-    function updateFloatingDimensionLabel(measurements) {
-      if (!dimensionLabelRoot || !dimensionLabelPlane || !dimensionCanvasContext || !dimensionCanvasTexture) return;
-
-      if (!measurements || !baseDimensions) {
-        dimensionLabelRoot.setAttribute('visible', 'false');
-        return;
-      }
-
-      const scaledHeight = baseDimensions.height * currentScale;
-      const labelY = Math.max((scaledHeight / 2) + 0.45, 0.65);
-
-      dimensionLabelRoot.setAttribute('visible', 'true');
-      dimensionLabelRoot.setAttribute('position', `0 ${labelY.toFixed(3)} 0`);
-      drawDimensionCanvas([
-        `W ${measurements.width}`,
-        `L ${measurements.length}`,
-        `H ${measurements.height}`
-      ]);
     }
 
     function buildARScene() {
@@ -689,7 +531,6 @@
       marker.setAttribute('smooth', 'true');
       marker.setAttribute('smoothCount', '5');
       marker.setAttribute('emitevents', 'true');
-      createFloatingDimensionLabel(marker);
 
       if (modelUrl && modelUrl.trim() !== '') {
         const model = document.createElement('a-entity');
@@ -732,12 +573,14 @@
         statusDot.classList.add('tracking');
         statusText.textContent = 'Marker found - tracking active';
         document.getElementById('hint-card').style.opacity = '0.3';
+        document.getElementById('dimension-card').style.opacity = '1';
       });
 
       marker.addEventListener('markerLost', () => {
         statusDot.classList.remove('tracking');
         statusText.textContent = 'Marker lost - point camera at Hiro marker';
         document.getElementById('hint-card').style.opacity = '1';
+        document.getElementById('dimension-card').style.opacity = '0.75';
       });
 
       window._arMarker = marker;
