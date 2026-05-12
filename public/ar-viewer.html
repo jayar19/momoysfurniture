@@ -17,7 +17,6 @@
       height: 100vh;
     }
 
-    /* Camera feed fills the screen */
     #camera-feed {
       position: fixed;
       inset: 0;
@@ -27,7 +26,6 @@
       z-index: 0;
     }
 
-    /* Canvas for AR overlay on top of camera */
     #ar-canvas {
       position: fixed;
       inset: 0;
@@ -37,7 +35,6 @@
       pointer-events: none;
     }
 
-    /* ── UI Layer ── */
     #ui {
       position: fixed;
       inset: 0;
@@ -45,10 +42,11 @@
       pointer-events: none;
     }
 
-    /* Top bar */
     #topbar {
       position: absolute;
-      top: 0; left: 0; right: 0;
+      top: 0;
+      left: 0;
+      right: 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -79,7 +77,6 @@
       font-weight: 600;
     }
 
-    /* Status pill */
     #status-bar {
       position: absolute;
       top: 4.5rem;
@@ -98,15 +95,78 @@
     }
 
     #status-dot {
-      width: 8px; height: 8px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: #e74c3c;
       flex-shrink: 0;
     }
-    #status-dot.tracking { background: #27ae60; animation: blink 1.5s infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-    /* Bottom hint card */
+    #status-dot.tracking {
+      background: #27ae60;
+      animation: blink 1.5s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    #dimension-card {
+      position: absolute;
+      top: 7.6rem;
+      left: 50%;
+      transform: translateX(-50%);
+      min-width: 220px;
+      background: rgba(0,0,0,0.68);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff;
+      border-radius: 18px;
+      padding: 0.85rem 1rem;
+    }
+
+    #dimension-card h3 {
+      margin-bottom: 0.45rem;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #FFDA1A;
+      text-align: center;
+    }
+
+    .dimension-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.55rem;
+    }
+
+    .dimension-item {
+      text-align: center;
+    }
+
+    .dimension-label {
+      display: block;
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.72);
+      margin-bottom: 0.2rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .dimension-value {
+      display: block;
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    #dimension-note {
+      margin-top: 0.55rem;
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.65);
+      text-align: center;
+    }
+
     #hint-card {
       position: absolute;
       bottom: 2rem;
@@ -124,8 +184,18 @@
       pointer-events: all;
     }
 
-    #hint-card h3 { font-size: 0.95rem; color: #FFDA1A; margin-bottom: 0.4rem; }
-    #hint-card p  { font-size: 0.8rem; color: #bbb; line-height: 1.6; margin-bottom: 1rem; }
+    #hint-card h3 {
+      font-size: 0.95rem;
+      color: #FFDA1A;
+      margin-bottom: 0.4rem;
+    }
+
+    #hint-card p {
+      font-size: 0.8rem;
+      color: #bbb;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
 
     #show-marker-btn {
       background: #FFDA1A;
@@ -139,7 +209,6 @@
       width: 100%;
     }
 
-    /* Right controls */
     #controls {
       position: absolute;
       right: 1.25rem;
@@ -156,7 +225,8 @@
       border: 1px solid rgba(255,255,255,0.15);
       color: #fff;
       border-radius: 12px;
-      width: 48px; height: 48px;
+      width: 48px;
+      height: 48px;
       font-size: 1.15rem;
       cursor: pointer;
       display: flex;
@@ -164,9 +234,13 @@
       justify-content: center;
       transition: background 0.2s;
     }
-    .ctrl:hover, .ctrl.on { background: rgba(255,218,26,0.4); border-color: #FFDA1A; }
 
-    /* Marker modal */
+    .ctrl:hover,
+    .ctrl.on {
+      background: rgba(255,218,26,0.4);
+      border-color: #FFDA1A;
+    }
+
     #marker-modal {
       display: none;
       position: fixed;
@@ -177,7 +251,10 @@
       justify-content: center;
       padding: 1.5rem;
     }
-    #marker-modal.open { display: flex; }
+
+    #marker-modal.open {
+      display: flex;
+    }
 
     .modal-box {
       background: #fff;
@@ -187,11 +264,24 @@
       width: 100%;
       text-align: center;
     }
-    .modal-box h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.4rem; color: #111; }
-    .modal-box p  { font-size: 0.82rem; color: #666; line-height: 1.6; margin-bottom: 1rem; }
+
+    .modal-box h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      color: #111;
+    }
+
+    .modal-box p {
+      font-size: 0.82rem;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
 
     #marker-img {
-      width: 200px; height: 200px;
+      width: 200px;
+      height: 200px;
       margin: 0 auto 1rem;
       display: block;
       border: 6px solid #fff;
@@ -211,7 +301,6 @@
       width: 100%;
     }
 
-    /* Permission / error screen */
     #error-screen {
       display: none;
       position: fixed;
@@ -225,8 +314,19 @@
       text-align: center;
       padding: 2rem;
     }
-    #error-screen h2 { margin-bottom: 0.75rem; font-size: 1.2rem; }
-    #error-screen p  { color: #999; font-size: 0.9rem; line-height: 1.7; margin-bottom: 1.5rem; }
+
+    #error-screen h2 {
+      margin-bottom: 0.75rem;
+      font-size: 1.2rem;
+    }
+
+    #error-screen p {
+      color: #999;
+      font-size: 0.9rem;
+      line-height: 1.7;
+      margin-bottom: 1.5rem;
+    }
+
     #retry-btn {
       background: #FFDA1A;
       color: #111;
@@ -238,7 +338,6 @@
       cursor: pointer;
     }
 
-    /* Loading screen */
     #loading-screen {
       position: fixed;
       inset: 0;
@@ -252,110 +351,150 @@
       text-align: center;
       gap: 1rem;
     }
+
     .spinner {
-      width: 44px; height: 44px;
+      width: 44px;
+      height: 44px;
       border: 4px solid rgba(255,255,255,0.1);
       border-top-color: #FFDA1A;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #loading-screen p { font-size: 0.9rem; color: #999; }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    #loading-screen p {
+      font-size: 0.9rem;
+      color: #999;
+    }
+
+    @media (max-width: 640px) {
+      #dimension-card {
+        top: 7.9rem;
+        width: calc(100% - 2rem);
+        min-width: 0;
+      }
+
+      #hint-card {
+        width: calc(100% - 2rem);
+        bottom: 1.25rem;
+      }
+    }
   </style>
 </head>
 <body>
-
-  <!-- Live camera feed -->
   <video id="camera-feed" autoplay playsinline muted></video>
-
-  <!-- AR.js renders 3D on top of this canvas -->
   <canvas id="ar-canvas"></canvas>
 
-  <!-- UI -->
   <div id="ui">
     <div id="topbar">
-      <button id="back-btn" onclick="history.back()">← Back</button>
+      <button id="back-btn" onclick="history.back()">Back</button>
       <div id="product-label">Loading...</div>
     </div>
 
     <div id="status-bar">
       <div id="status-dot"></div>
-      <span id="status-text">Starting camera…</span>
+      <span id="status-text">Starting camera...</span>
+    </div>
+
+    <div id="dimension-card">
+      <h3>Live Size</h3>
+      <div class="dimension-grid">
+        <div class="dimension-item">
+          <span class="dimension-label">Width</span>
+          <span class="dimension-value" id="dimension-width">--</span>
+        </div>
+        <div class="dimension-item">
+          <span class="dimension-label">Length</span>
+          <span class="dimension-value" id="dimension-length">--</span>
+        </div>
+        <div class="dimension-item">
+          <span class="dimension-label">Height</span>
+          <span class="dimension-value" id="dimension-height">--</span>
+        </div>
+      </div>
+      <div id="dimension-note">Waiting for model size...</div>
     </div>
 
     <div id="hint-card">
-      <h3>📍 Marker AR</h3>
+      <h3>Marker AR</h3>
       <p>Point your camera at the <strong>Hiro marker</strong>. The 3D furniture model will appear on top of it and track wherever you move the marker.</p>
-      <button id="show-marker-btn" onclick="openMarkerModal()">Show Hiro Marker 🎯</button>
+      <button id="show-marker-btn" onclick="openMarkerModal()">Show Hiro Marker</button>
     </div>
 
     <div id="controls">
-      <button class="ctrl" id="btn-rotate" title="Auto-rotate" onclick="toggleRotate()">🔄</button>
-      <button class="ctrl" title="Scale up"   onclick="scaleUp()">＋</button>
-      <button class="ctrl" title="Scale down" onclick="scaleDown()">－</button>
-      <button class="ctrl" title="Show marker" onclick="openMarkerModal()">🎯</button>
+      <button class="ctrl" id="btn-rotate" title="Auto-rotate" onclick="toggleRotate()">R</button>
+      <button class="ctrl" title="Scale up" onclick="scaleUp()">+</button>
+      <button class="ctrl" title="Scale down" onclick="scaleDown()">-</button>
+      <button class="ctrl" title="Show marker" onclick="openMarkerModal()">M</button>
     </div>
   </div>
 
-  <!-- Marker modal -->
   <div id="marker-modal">
     <div class="modal-box">
-      <h3>🎯 Hiro Marker</h3>
+      <h3>Hiro Marker</h3>
       <p>Show this on a flat surface or print it out. Keep it well-lit and fully visible.</p>
       <img id="marker-img" src="" alt="Hiro Marker">
       <p style="font-size:0.72rem; color:#aaa; margin-bottom:1rem;">Tip: Display on another phone or tablet for easiest use.</p>
-      <button id="close-modal-btn" onclick="closeMarkerModal()">Start Tracking →</button>
+      <button id="close-modal-btn" onclick="closeMarkerModal()">Start Tracking</button>
     </div>
   </div>
 
-  <!-- Error screen -->
   <div id="error-screen">
-    <div style="font-size:3rem;margin-bottom:1rem;">📷</div>
+    <div style="font-size:3rem;margin-bottom:1rem;">CAM</div>
     <h2>Camera Access Needed</h2>
     <p>Marker AR requires your camera.<br>Please allow camera access and try again.</p>
-    <button id="retry-btn" onclick="location.reload()">Allow & Retry</button>
+    <button id="retry-btn" onclick="location.reload()">Allow and Retry</button>
   </div>
 
-  <!-- Loading screen -->
   <div id="loading-screen">
     <div class="spinner"></div>
-    <p>Starting camera…</p>
+    <p>Starting camera...</p>
   </div>
 
-  <!-- A-Frame + AR.js (stable CDN versions) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
 
   <script>
-    const params      = new URLSearchParams(window.location.search);
-    const productName = params.get('name')  || 'Furniture';
-    const modelUrl    = params.get('model') || '';
-    const imageUrl    = params.get('image') || '';
+    const params = new URLSearchParams(window.location.search);
+    const productName = params.get('name') || 'Furniture';
+    const modelUrl = params.get('model') || '';
 
     document.getElementById('product-label').textContent = productName;
 
-    // ── Generate Hiro marker as data URL (reliable fallback) ──
-    // Use official AR.js hosted image
     const HIRO_URL = 'https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/data/images/hiro.png';
     document.getElementById('marker-img').src = HIRO_URL;
 
-    // ── Start camera manually and show feed ──
     const video = document.getElementById('camera-feed');
     const loading = document.getElementById('loading-screen');
     const errorScreen = document.getElementById('error-screen');
     const statusDot = document.getElementById('status-dot');
     const statusText = document.getElementById('status-text');
+    const widthEl = document.getElementById('dimension-width');
+    const lengthEl = document.getElementById('dimension-length');
+    const heightEl = document.getElementById('dimension-height');
+    const dimensionNoteEl = document.getElementById('dimension-note');
+
+    const INITIAL_SCALE = 0.5;
+    let currentScale = INITIAL_SCALE;
+    let rotating = false;
+    let rotY = 0;
+    let rotTimer = null;
+    let baseDimensions = null;
 
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: { ideal: 'environment' }, // rear camera
-            width:  { ideal: 1280 },
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
             height: { ideal: 720 }
           },
           audio: false
         });
+
         video.srcObject = stream;
         video.onloadedmetadata = () => {
           video.play();
@@ -371,10 +510,54 @@
 
     startCamera();
 
-    // ── Build A-Frame AR scene programmatically ──
-    // This avoids the issue of A-Frame conflicting with our manual camera setup
+    function getObj() {
+      return document.getElementById('ar-obj');
+    }
+
+    function setDimensionText(width, length, height, note) {
+      widthEl.textContent = width;
+      lengthEl.textContent = length;
+      heightEl.textContent = height;
+      dimensionNoteEl.textContent = note;
+    }
+
+    function formatMeters(value) {
+      return `${value.toFixed(2)} m`;
+    }
+
+    function captureBaseDimensions(target) {
+      const object3D = target?.object3D;
+      if (!object3D) return;
+
+      const bbox = new THREE.Box3().setFromObject(object3D);
+      if (!Number.isFinite(bbox.min.x) || bbox.isEmpty()) return;
+
+      const size = new THREE.Vector3();
+      bbox.getSize(size);
+
+      const scale = target.getAttribute('scale') || { x: 1, y: 1, z: 1 };
+      baseDimensions = {
+        width: size.x / (Number(scale.x) || 1),
+        height: size.y / (Number(scale.y) || 1),
+        length: size.z / (Number(scale.z) || 1)
+      };
+    }
+
+    function updateDimensionDisplay() {
+      if (!baseDimensions) {
+        setDimensionText('--', '--', '--', 'Waiting for model size...');
+        return;
+      }
+
+      setDimensionText(
+        formatMeters(baseDimensions.width * currentScale),
+        formatMeters(baseDimensions.length * currentScale),
+        formatMeters(baseDimensions.height * currentScale),
+        `Updates automatically as you resize the model. Scale: ${currentScale.toFixed(2)}x`
+      );
+    }
+
     function buildARScene() {
-      // Remove loading screen after AR.js initializes
       const scene = document.createElement('a-scene');
       scene.setAttribute('embedded', '');
       scene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false; trackingMethod: best;');
@@ -388,22 +571,27 @@
       marker.setAttribute('smoothCount', '5');
       marker.setAttribute('emitevents', 'true');
 
-      // 3D model or fallback sofa
       if (modelUrl && modelUrl.trim() !== '') {
         const model = document.createElement('a-entity');
         model.setAttribute('gltf-model', modelUrl);
         model.setAttribute('position', '0 0 0');
-        model.setAttribute('scale', '0.5 0.5 0.5');
+        model.setAttribute('scale', `${INITIAL_SCALE} ${INITIAL_SCALE} ${INITIAL_SCALE}`);
         model.id = 'ar-obj';
         marker.appendChild(model);
+        model.addEventListener('model-loaded', () => {
+          captureBaseDimensions(model);
+          updateDimensionDisplay();
+        });
       } else {
-        // Sofa placeholder
         const sofa = buildSofa();
         sofa.id = 'ar-obj';
         marker.appendChild(sofa);
+        setTimeout(() => {
+          captureBaseDimensions(sofa);
+          updateDimensionDisplay();
+        }, 120);
       }
 
-      // Tracking ring on floor of marker
       const ring = document.createElement('a-ring');
       ring.setAttribute('position', '0 0.01 0');
       ring.setAttribute('rotation', '-90 0 0');
@@ -420,55 +608,52 @@
       scene.appendChild(camera);
       document.body.appendChild(scene);
 
-      // Tracking events
       marker.addEventListener('markerFound', () => {
         statusDot.classList.add('tracking');
-        statusText.textContent = '✓ Marker found — tracking active';
+        statusText.textContent = 'Marker found - tracking active';
         document.getElementById('hint-card').style.opacity = '0.3';
       });
 
       marker.addEventListener('markerLost', () => {
         statusDot.classList.remove('tracking');
-        statusText.textContent = 'Marker lost — point camera at Hiro marker';
+        statusText.textContent = 'Marker lost - point camera at Hiro marker';
         document.getElementById('hint-card').style.opacity = '1';
       });
 
       window._arMarker = marker;
+      updateDimensionDisplay();
     }
 
     function buildSofa() {
       const g = document.createElement('a-entity');
       g.setAttribute('position', '0 0 0');
+      g.setAttribute('scale', `${INITIAL_SCALE} ${INITIAL_SCALE} ${INITIAL_SCALE}`);
 
       const parts = [
-        // seat
-        { el:'a-box',      pos:'0 0.08 0',      w:'1.3', h:'0.18', d:'0.65', color:'#8B6914' },
-        // back
-        { el:'a-box',      pos:'0 0.32 -0.24',  w:'1.3', h:'0.48', d:'0.18', color:'#8B6914' },
-        // left arm
-        { el:'a-box',      pos:'-0.6 0.22 0',   w:'0.18',h:'0.28', d:'0.65', color:'#7a5c10' },
-        // right arm
-        { el:'a-box',      pos:'0.6 0.22 0',    w:'0.18',h:'0.28', d:'0.65', color:'#7a5c10' },
+        { el: 'a-box', pos: '0 0.08 0', w: '1.3', h: '0.18', d: '0.65', color: '#8B6914' },
+        { el: 'a-box', pos: '0 0.32 -0.24', w: '1.3', h: '0.48', d: '0.18', color: '#8B6914' },
+        { el: 'a-box', pos: '-0.6 0.22 0', w: '0.18', h: '0.28', d: '0.65', color: '#7a5c10' },
+        { el: 'a-box', pos: '0.6 0.22 0', w: '0.18', h: '0.28', d: '0.65', color: '#7a5c10' }
       ];
 
       const legs = [
-        [-0.52, -0.07,  0.24],
-        [ 0.52, -0.07,  0.24],
+        [-0.52, -0.07, 0.24],
+        [0.52, -0.07, 0.24],
         [-0.52, -0.07, -0.24],
-        [ 0.52, -0.07, -0.24],
+        [0.52, -0.07, -0.24]
       ];
 
-      parts.forEach(p => {
-        const el = document.createElement(p.el);
-        el.setAttribute('position', p.pos);
-        if (p.w) el.setAttribute('width', p.w);
-        if (p.h) el.setAttribute('height', p.h);
-        if (p.d) el.setAttribute('depth', p.d);
-        el.setAttribute('color', p.color);
+      parts.forEach((part) => {
+        const el = document.createElement(part.el);
+        el.setAttribute('position', part.pos);
+        el.setAttribute('width', part.w);
+        el.setAttribute('height', part.h);
+        el.setAttribute('depth', part.d);
+        el.setAttribute('color', part.color);
         g.appendChild(el);
       });
 
-      legs.forEach(([x,y,z]) => {
+      legs.forEach(([x, y, z]) => {
         const leg = document.createElement('a-cylinder');
         leg.setAttribute('position', `${x} ${y} ${z}`);
         leg.setAttribute('radius', '0.04');
@@ -480,21 +665,9 @@
       return g;
     }
 
-    // Wait for A-Frame to be ready then build scene
     document.addEventListener('DOMContentLoaded', () => {
-      // Small delay to ensure A-Frame is fully loaded
       setTimeout(buildARScene, 500);
     });
-
-    // ── Controls ──
-    let currentScale = 1;
-    let rotating = false;
-    let rotY = 0;
-    let rotTimer = null;
-
-    function getObj() {
-      return document.getElementById('ar-obj');
-    }
 
     function scaleUp() {
       currentScale = Math.min(currentScale * 1.2, 5);
@@ -508,26 +681,36 @@
 
     function applyScale() {
       const obj = getObj();
-      if (obj) obj.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
+      if (obj) {
+        obj.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
+      }
+      updateDimensionDisplay();
     }
 
     function toggleRotate() {
       rotating = !rotating;
       document.getElementById('btn-rotate').classList.toggle('on', rotating);
+
       if (rotating) {
         rotTimer = setInterval(() => {
           rotY = (rotY + 1.5) % 360;
           const obj = getObj();
-          if (obj) obj.setAttribute('rotation', `0 ${rotY} 0`);
+          if (obj) {
+            obj.setAttribute('rotation', `0 ${rotY} 0`);
+          }
         }, 16);
       } else {
         clearInterval(rotTimer);
       }
     }
 
-    // ── Marker modal ──
-    function openMarkerModal()  { document.getElementById('marker-modal').classList.add('open'); }
-    function closeMarkerModal() { document.getElementById('marker-modal').classList.remove('open'); }
+    function openMarkerModal() {
+      document.getElementById('marker-modal').classList.add('open');
+    }
+
+    function closeMarkerModal() {
+      document.getElementById('marker-modal').classList.remove('open');
+    }
   </script>
 </body>
 </html>
