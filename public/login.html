@@ -214,6 +214,15 @@
       font-size: 0.9rem;
       min-height: 1.2rem;
     }
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper input {
+  padding-right: 90px;
+}
+
+/* TOGGLE BUTTON */
 .toggle-password {
   position: absolute;
   top: 50%;
@@ -242,7 +251,6 @@
 
 .toggle-password:hover {
   background: rgba(255,255,255,0.3);
-  transform: translateY(-50%) translateY(-1px);
 }
 
 .toggle-password:active {
@@ -283,10 +291,17 @@
           </div>
           <div class="form-group">
             <label for="password">Password</label>
-            <input type="password" id="password" required placeholder="Enter your password">
-            <button type="button" class="toggle-password" onclick="togglePassword('password', this)">
-              Show
-          </button>
+            <div class="password-wrapper">
+    <input type="password"
+           id="password"
+           placeholder="Enter your password">
+
+    <button type="button"
+            class="toggle-password"
+            onclick="togglePassword('password', this)">
+      Show
+    </button>
+  </div>
           </div>
           <div class="auth-link-row">
             <button type="button" class="auth-link-btn" id="forgot-password-btn">Forgot password?</button>
@@ -308,11 +323,14 @@
           </div>
           <div class="form-group">
             <label for="password">Password</label>
-            <input type="password" id="reg-password" required placeholder="At least 6 characters" minlength="6">
-            <button type="button" class="toggle-password" onclick="togglePassword('reg-password', this)">
-              Show
-            </button>
-          </div>
+<div class="password-wrapper">
+    <input type="password" id="reg-password" required placeholder="At least 6 characters" minlength="6">
+    <button type="button"
+            class="toggle-password"
+            onclick="togglePassword('reg-password', this)">
+      Show
+    </button>
+  </div>          </div>
           <button type="submit" class="auth-submit">Create Account</button>
         </form>
       </div>
