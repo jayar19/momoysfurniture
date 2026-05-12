@@ -11,6 +11,12 @@ function getVerificationBadgeMarkup(record) {
   return `<span style="display: inline-flex; align-items: center; padding: 0.35rem 0.8rem; border-radius: 999px; background: ${background}; color: ${color}; font-weight: 700; font-size: 0.9rem;">${record.statusLabel}</span>`;
 }
 
+function getEmailBadgeMarkup(record) {
+  const color = record.emailVerified ? '#1f7a3e' : '#9a6700';
+  const background = record.emailVerified ? '#e8f5e9' : '#fff7e6';
+  return `<span style="display: inline-flex; align-items: center; padding: 0.35rem 0.8rem; border-radius: 999px; background: ${background}; color: ${color}; font-weight: 700; font-size: 0.9rem;">${record.emailStatusLabel}</span>`;
+}
+
 function renderProfileVerificationPanel(profile) {
   const panel = document.getElementById('profile-verification-panel');
   if (!panel || typeof userVerification === 'undefined') return;
@@ -31,10 +37,28 @@ function renderProfileVerificationPanel(profile) {
         <h2 style="margin-bottom: 0.35rem;">My Profile Verification</h2>
         <p style="margin: 0; color: #667085;">This section shows the ID linked to your account and whether admin approval is already complete.</p>
       </div>
-      <div>${getVerificationBadgeMarkup(record)}</div>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        ${getVerificationBadgeMarkup(record)}
+        ${getEmailBadgeMarkup(record)}
+      </div>
     </div>
     <div style="margin-top: 1rem; background: #f8fafc; border-radius: 10px; padding: 1rem;">
       <p style="margin: 0 0 0.8rem; color: #334155;"><strong>Current access:</strong> ${summaryText}</p>
+      <div style="margin-bottom: 1rem; padding: 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;">
+        <h3 style="margin: 0 0 0.55rem; font-size: 1rem;">Email Verification</h3>
+        <p style="margin: 0 0 0.75rem; color: #475467;">Verify your email once with a 6-digit OTP sent to your account email.</p>
+        ${record.emailVerified ? `
+          <p style="margin: 0; color: #1f7a3e; font-weight: 600;">Your email has already been verified.</p>
+        ` : `
+          <form id="orders-email-verification-form" style="display: grid; gap: 0.75rem; max-width: 420px;">
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+              <button type="button" id="orders-send-email-otp-btn" class="btn btn-secondary">Send OTP Code</button>
+              <input id="orders-email-verification-code" type="text" inputmode="numeric" pattern="\\d{6}" maxlength="6" placeholder="Enter 6-digit code" style="flex: 1 1 180px; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: fit-content;">Verify Email</button>
+          </form>
+        `}
+      </div>
       ${record.hasUploadedId ? `
         <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-start;">
           <a href="${record.imageUrl}" target="_blank" rel="noopener">
@@ -67,6 +91,16 @@ function renderProfileVerificationPanel(profile) {
   if (uploadForm) {
     uploadForm.addEventListener('submit', submitVerificationUploadFromOrders);
   }
+
+  const emailForm = document.getElementById('orders-email-verification-form');
+  if (emailForm) {
+    emailForm.addEventListener('submit', submitEmailVerificationFromOrders);
+  }
+
+  const sendOtpBtn = document.getElementById('orders-send-email-otp-btn');
+  if (sendOtpBtn) {
+    sendOtpBtn.addEventListener('click', sendEmailOtpFromOrders);
+  }
 }
 
 async function refreshOrdersVerification(forceRefresh = false) {
@@ -98,6 +132,46 @@ async function submitVerificationUploadFromOrders(event) {
     submitButton.textContent = 'Uploading...';
     await userVerification.uploadVerificationId(fileInput.files[0], labelInput.value.trim() || 'Government ID');
     showMessage('Your ID was uploaded successfully and is now awaiting admin approval.', 'success');
+    await refreshOrdersVerification(true);
+  } catch (error) {
+    showMessage(error.message, 'error');
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = originalText;
+  }
+}
+
+async function sendEmailOtpFromOrders(event) {
+  const button = event.currentTarget;
+  const originalText = button.textContent;
+
+  try {
+    button.disabled = true;
+    button.textContent = 'Sending...';
+    await userVerification.sendEmailVerificationOtp();
+    showMessage('Verification code sent to your email.', 'success');
+    await refreshOrdersVerification(true);
+  } catch (error) {
+    showMessage(error.message, 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
+async function submitEmailVerificationFromOrders(event) {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const codeInput = document.getElementById('orders-email-verification-code');
+  const submitButton = form.querySelector('button[type="submit"]');
+  const originalText = submitButton.textContent;
+
+  try {
+    submitButton.disabled = true;
+    submitButton.textContent = 'Verifying...';
+    await userVerification.verifyEmailOtp(codeInput.value.trim());
+    showMessage('Email verified successfully.', 'success');
     await refreshOrdersVerification(true);
   } catch (error) {
     showMessage(error.message, 'error');

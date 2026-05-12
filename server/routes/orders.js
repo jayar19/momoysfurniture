@@ -48,10 +48,17 @@ router.post('/', verifyToken, async (req, res) => {
     const hasVerificationId = Boolean(userData.verificationIdUrl);
     const verificationStatus = userData.verificationStatus || 'missing';
     const verificationOrderUsed = Boolean(userData.verificationOrderUsed);
+    const emailVerificationStatus = userData.emailVerificationStatus || 'pending';
 
     if (!hasVerificationId) {
       return res.status(403).json({
         error: 'Please upload a valid ID before placing an order.'
+      });
+    }
+
+    if (emailVerificationStatus !== 'verified') {
+      return res.status(403).json({
+        error: 'Please verify your email with the one-time code before placing an order.'
       });
     }
 

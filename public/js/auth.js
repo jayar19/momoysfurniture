@@ -9,6 +9,7 @@ async function registerUser(email, password, fullName) {
       email: email,
       fullName: fullName,
       role: 'user',
+      emailVerificationStatus: 'pending',
       createdAt: new Date().toISOString()
     });
 

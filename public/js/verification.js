@@ -28,6 +28,7 @@ function getVerificationRecord(profile = {}) {
   const hasUploadedId = Boolean(profile.verificationIdUrl);
   const isApproved = status === 'approved';
   const orderUsedWhilePending = Boolean(profile.verificationOrderUsed);
+  const emailVerified = profile.emailVerificationStatus === 'verified';
 
   return {
     status,
@@ -35,7 +36,9 @@ function getVerificationRecord(profile = {}) {
     hasUploadedId,
     isApproved,
     orderUsedWhilePending,
-    canPlaceOrder: hasUploadedId && (isApproved || !orderUsedWhilePending),
+    emailVerified,
+    emailStatusLabel: emailVerified ? 'Verified' : 'Verification Required',
+    canPlaceOrder: hasUploadedId && emailVerified && (isApproved || !orderUsedWhilePending),
     imageUrl: profile.verificationDisplayUrl || profile.verificationIdUrl || '',
     thumbUrl: profile.verificationThumbUrl || profile.verificationDisplayUrl || profile.verificationIdUrl || '',
     uploadedAt: profile.verificationUploadedAt || '',
@@ -43,9 +46,11 @@ function getVerificationRecord(profile = {}) {
     idLabel: profile.verificationIdLabel || 'Government ID',
     blockedReason: !hasUploadedId
       ? 'Upload a valid ID before you can place an order.'
-      : (isApproved || !orderUsedWhilePending
-          ? ''
-          : 'Your ID is still pending approval, and your one allowed order has already been used.')
+      : (!emailVerified
+          ? 'Verify your email with the one-time code before you can place an order.'
+          : (isApproved || !orderUsedWhilePending
+              ? ''
+              : 'Your ID is still pending approval, and your one allowed order has already been used.')),
   };
 }
 
@@ -94,9 +99,42 @@ async function uploadVerificationId(file, idLabel = 'Government ID') {
   return payload;
 }
 
+async function sendEmailVerificationOtp() {
+  const response = await authenticatedFetch('/users/me/email-verification/send-otp', {
+    method: 'POST'
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || 'Failed to send the email verification code.');
+  }
+
+  window.__currentUserProfileCache = payload;
+  window.dispatchEvent(new CustomEvent('verification-updated', { detail: payload }));
+  return payload;
+}
+
+async function verifyEmailOtp(code) {
+  const response = await authenticatedFetch('/users/me/email-verification/verify', {
+    method: 'POST',
+    body: JSON.stringify({ code })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || 'Failed to verify the email code.');
+  }
+
+  window.__currentUserProfileCache = payload;
+  window.dispatchEvent(new CustomEvent('verification-updated', { detail: payload }));
+  return payload;
+}
+
 window.userVerification = {
   loadCurrentUserProfile,
   getVerificationRecord,
   formatVerificationDate,
-  uploadVerificationId
+  uploadVerificationId,
+  sendEmailVerificationOtp,
+  verifyEmailOtp
 };

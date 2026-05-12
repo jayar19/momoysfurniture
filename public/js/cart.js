@@ -20,6 +20,12 @@ function getVerificationStatusMarkup(record) {
   return `<span style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.8rem; border-radius: 999px; background: ${background}; color: ${color}; font-weight: 700; font-size: 0.9rem;">${record.statusLabel}</span>`;
 }
 
+function getEmailStatusMarkup(record) {
+  const color = record.emailVerified ? '#1f7a3e' : '#9a6700';
+  const background = record.emailVerified ? '#e8f5e9' : '#fff7e6';
+  return `<span style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.8rem; border-radius: 999px; background: ${background}; color: ${color}; font-weight: 700; font-size: 0.9rem;">${record.emailStatusLabel}</span>`;
+}
+
 function renderCartVerificationCard(profile) {
   const container = document.getElementById('verification-card');
   if (!container) return;
@@ -40,12 +46,30 @@ function renderCartVerificationCard(profile) {
     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
       <div>
         <h2 style="margin-bottom: 0.35rem;">Verification ID</h2>
-        <p style="margin: 0; color: #667085;">A valid ID is required before checkout. Upload is one-time only unless an admin deletes it.</p>
+        <p style="margin: 0; color: #667085;">A valid ID and one-time email OTP verification are required before checkout.</p>
       </div>
-      <div>${getVerificationStatusMarkup(record)}</div>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        ${getVerificationStatusMarkup(record)}
+        ${getEmailStatusMarkup(record)}
+      </div>
     </div>
     <div style="margin-top: 1rem; background: #f8fafc; border-radius: 10px; padding: 1rem;">
       <p style="margin: 0 0 0.65rem; color: #334155;"><strong>Status note:</strong> ${helperText}</p>
+      <div style="margin-bottom: 1rem; padding: 1rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;">
+        <h3 style="margin: 0 0 0.55rem; font-size: 1rem;">Email Verification</h3>
+        <p style="margin: 0 0 0.75rem; color: #475467;">We will send a 6-digit OTP to your account email. You only need to verify once.</p>
+        ${record.emailVerified ? `
+          <p style="margin: 0; color: #1f7a3e; font-weight: 600;">Your email has already been verified.</p>
+        ` : `
+          <form id="email-verification-form" style="display: grid; gap: 0.75rem; max-width: 420px;">
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+              <button type="button" id="send-email-otp-btn" class="btn btn-secondary">Send OTP Code</button>
+              <input id="email-verification-code" type="text" inputmode="numeric" pattern="\\d{6}" maxlength="6" placeholder="Enter 6-digit code" style="flex: 1 1 180px; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: fit-content;">Verify Email</button>
+          </form>
+        `}
+      </div>
       ${record.hasUploadedId ? `
         <div style="display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap;">
           <a href="${record.imageUrl}" target="_blank" rel="noopener">
@@ -79,6 +103,16 @@ function renderCartVerificationCard(profile) {
   if (uploadForm) {
     uploadForm.addEventListener('submit', submitVerificationUploadFromCart);
   }
+
+  const emailForm = document.getElementById('email-verification-form');
+  if (emailForm) {
+    emailForm.addEventListener('submit', submitEmailVerificationFromCart);
+  }
+
+  const sendOtpBtn = document.getElementById('send-email-otp-btn');
+  if (sendOtpBtn) {
+    sendOtpBtn.addEventListener('click', sendEmailOtpFromCart);
+  }
 }
 
 async function refreshCartVerification(forceRefresh = false) {
@@ -111,6 +145,46 @@ async function submitVerificationUploadFromCart(event) {
     submitButton.textContent = 'Uploading...';
     await userVerification.uploadVerificationId(fileInput.files[0], labelInput.value.trim() || 'Government ID');
     showMessage('Your ID was uploaded successfully and is now pending review.', 'success');
+    await refreshCartVerification(true);
+  } catch (error) {
+    showMessage(error.message, 'error');
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = originalText;
+  }
+}
+
+async function sendEmailOtpFromCart(event) {
+  const button = event.currentTarget;
+  const originalText = button.textContent;
+
+  try {
+    button.disabled = true;
+    button.textContent = 'Sending...';
+    await userVerification.sendEmailVerificationOtp();
+    showMessage('Verification code sent to your email.', 'success');
+    await refreshCartVerification(true);
+  } catch (error) {
+    showMessage(error.message, 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
+async function submitEmailVerificationFromCart(event) {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const codeInput = document.getElementById('email-verification-code');
+  const submitButton = form.querySelector('button[type="submit"]');
+  const originalText = submitButton.textContent;
+
+  try {
+    submitButton.disabled = true;
+    submitButton.textContent = 'Verifying...';
+    await userVerification.verifyEmailOtp(codeInput.value.trim());
+    showMessage('Email verified successfully. You can now continue to checkout.', 'success');
     await refreshCartVerification(true);
   } catch (error) {
     showMessage(error.message, 'error');
