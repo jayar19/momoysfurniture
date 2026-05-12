@@ -38,7 +38,7 @@
     #ui {
       position: fixed;
       inset: 0;
-      z-index: 10;
+      z-index: 9999 !important;
       pointer-events: none;
     }
 
@@ -124,6 +124,7 @@
       color: #fff;
       border-radius: 18px;
       padding: 0.85rem 1rem;
+      z-index: 10000 !important;
     }
 
     #dimension-card h3 {
@@ -182,6 +183,7 @@
       width: calc(100% - 3rem);
       max-width: 340px;
       pointer-events: all;
+      z-index: 10000 !important;
     }
 
     #hint-card h3 {
@@ -217,6 +219,14 @@
       flex-direction: column;
       gap: 0.6rem;
       pointer-events: all;
+      z-index: 10000 !important;
+    }
+
+    .ar-scene-layer,
+    .a-scene,
+    .a-canvas,
+    canvas.a-canvas {
+      z-index: 2 !important;
     }
 
     .ctrl {
@@ -484,7 +494,10 @@
     let rotTimer = null;
     let baseDimensions = null;
     let dimensionLabelRoot = null;
-    let dimensionLabelText = null;
+    let dimensionLabelPlane = null;
+    let dimensionCanvas = null;
+    let dimensionCanvasTexture = null;
+    let dimensionCanvasContext = null;
 
     async function startCamera() {
       try {
@@ -571,34 +584,79 @@
       root.setAttribute('visible', 'false');
       root.id = 'dimension-label-root';
 
-      const background = document.createElement('a-plane');
-      background.setAttribute('width', '1.9');
-      background.setAttribute('height', '0.62');
-      background.setAttribute('color', '#111111');
-      background.setAttribute('opacity', '0.78');
-      background.setAttribute('material', 'shader: flat; side: double; transparent: true;');
-      background.setAttribute('position', '0 0 0');
-      root.appendChild(background);
-
-      const text = document.createElement('a-text');
-      text.setAttribute('value', 'Loading size...');
-      text.setAttribute('align', 'center');
-      text.setAttribute('color', '#FFDA1A');
-      text.setAttribute('width', '3.4');
-      text.setAttribute('wrap-count', '22');
-      text.setAttribute('anchor', 'center');
-      text.setAttribute('baseline', 'center');
-      text.setAttribute('position', '0 0 0.01');
-      text.setAttribute('side', 'double');
-      root.appendChild(text);
+      const plane = document.createElement('a-plane');
+      plane.setAttribute('width', '2.25');
+      plane.setAttribute('height', '0.85');
+      plane.setAttribute('position', '0 0 0');
+      plane.setAttribute('material', 'shader: flat; transparent: true; opacity: 1; side: double;');
+      root.appendChild(plane);
 
       marker.appendChild(root);
       dimensionLabelRoot = root;
-      dimensionLabelText = text;
+      dimensionLabelPlane = plane;
+
+      dimensionCanvas = document.createElement('canvas');
+      dimensionCanvas.width = 1024;
+      dimensionCanvas.height = 384;
+      dimensionCanvasContext = dimensionCanvas.getContext('2d');
+      dimensionCanvasTexture = new THREE.CanvasTexture(dimensionCanvas);
+      dimensionCanvasTexture.needsUpdate = true;
+
+      plane.addEventListener('loaded', () => {
+        const mesh = plane.getObject3D('mesh');
+        if (mesh && mesh.material) {
+          mesh.material.map = dimensionCanvasTexture;
+          mesh.material.transparent = true;
+          mesh.material.needsUpdate = true;
+        }
+        drawDimensionCanvas(['Loading size...']);
+      });
+    }
+
+    function drawDimensionCanvas(lines) {
+      if (!dimensionCanvasContext || !dimensionCanvasTexture) return;
+
+      const ctx = dimensionCanvasContext;
+      const width = dimensionCanvas.width;
+      const height = dimensionCanvas.height;
+
+      ctx.clearRect(0, 0, width, height);
+
+      ctx.fillStyle = 'rgba(17, 17, 17, 0.82)';
+      ctx.strokeStyle = 'rgba(255, 218, 26, 0.9)';
+      ctx.lineWidth = 10;
+
+      const radius = 40;
+      ctx.beginPath();
+      ctx.moveTo(radius, 0);
+      ctx.lineTo(width - radius, 0);
+      ctx.quadraticCurveTo(width, 0, width, radius);
+      ctx.lineTo(width, height - radius);
+      ctx.quadraticCurveTo(width, height, width - radius, height);
+      ctx.lineTo(radius, height);
+      ctx.quadraticCurveTo(0, height, 0, height - radius);
+      ctx.lineTo(0, radius);
+      ctx.quadraticCurveTo(0, 0, radius, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#FFDA1A';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = 'bold 92px Arial';
+
+      const lineGap = 104;
+      const startY = (height / 2) - (((lines.length - 1) * lineGap) / 2);
+      lines.forEach((line, index) => {
+        ctx.fillText(line, width / 2, startY + (index * lineGap));
+      });
+
+      dimensionCanvasTexture.needsUpdate = true;
     }
 
     function updateFloatingDimensionLabel(measurements) {
-      if (!dimensionLabelRoot || !dimensionLabelText) return;
+      if (!dimensionLabelRoot || !dimensionLabelPlane || !dimensionCanvasContext || !dimensionCanvasTexture) return;
 
       if (!measurements || !baseDimensions) {
         dimensionLabelRoot.setAttribute('visible', 'false');
@@ -610,19 +668,21 @@
 
       dimensionLabelRoot.setAttribute('visible', 'true');
       dimensionLabelRoot.setAttribute('position', `0 ${labelY.toFixed(3)} 0`);
-      dimensionLabelText.setAttribute(
-        'value',
-        `W ${measurements.width}\nL ${measurements.length}\nH ${measurements.height}`
-      );
+      drawDimensionCanvas([
+        `W ${measurements.width}`,
+        `L ${measurements.length}`,
+        `H ${measurements.height}`
+      ]);
     }
 
     function buildARScene() {
       const scene = document.createElement('a-scene');
+      scene.className = 'ar-scene-layer';
       scene.setAttribute('embedded', '');
       scene.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false; trackingMethod: best;');
       scene.setAttribute('renderer', 'logarithmicDepthBuffer: true;');
       scene.setAttribute('vr-mode-ui', 'enabled: false');
-      scene.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:2;';
+      scene.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;';
 
       const marker = document.createElement('a-marker');
       marker.setAttribute('preset', 'hiro');
