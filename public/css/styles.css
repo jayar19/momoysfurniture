@@ -1478,9 +1478,16 @@ body.nav-open {
     transform: translateY(-6px) rotate(-45deg);
   }
 
-  .nav-links li,
+  .nav-links li {
+    width: 100%;
+  }
+
+  .auth-required {
+    display: none;
+  }
+
   .auth-required.visible,
-  .guest-only {
+  .guest-only:not(.hidden) {
     display: block;
   }
 
@@ -1675,6 +1682,12 @@ body.nav-open {
 }
 .guest-only.hidden { 
   display: none; 
+}
+
+.nav-links li.hidden,
+.nav-links li.auth-required:not(.visible),
+.nav-links li.guest-only.hidden {
+  display: none !important;
 }
 
 /* ── Messages ── */

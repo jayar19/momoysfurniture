@@ -176,6 +176,10 @@ if (logoutBtn) {
 auth.onAuthStateChanged((user) => {
   const authRequired = document.querySelectorAll('.auth-required');
   const guestOnly    = document.querySelectorAll('.guest-only');
+  const logoutBtn = document.getElementById('logout-btn');
+  const logoutItem = logoutBtn ? logoutBtn.closest('li') : null;
+  const cartLinks = document.querySelectorAll('.nav-links a[href="/cart.html"]');
+  const ordersLinks = document.querySelectorAll('.nav-links a[href="/orders.html"]');
 
   if (user) {
     // User is logged in - show auth-required, hide guest-only
@@ -187,6 +191,24 @@ auth.onAuthStateChanged((user) => {
       el.classList.add('hidden');
       el.classList.remove('visible');
     });
+    if (logoutItem) {
+      logoutItem.classList.remove('hidden');
+      logoutItem.classList.add('visible');
+    }
+    cartLinks.forEach((link) => {
+      const item = link.closest('li');
+      if (item) {
+        item.classList.remove('hidden');
+        item.classList.add('visible');
+      }
+    });
+    ordersLinks.forEach((link) => {
+      const item = link.closest('li');
+      if (item) {
+        item.classList.remove('hidden');
+        item.classList.add('visible');
+      }
+    });
   } else {
     // User is not logged in - hide auth-required, show guest-only
     authRequired.forEach(el => {
@@ -196,6 +218,24 @@ auth.onAuthStateChanged((user) => {
     guestOnly.forEach(el => {
       el.classList.remove('hidden');
       el.classList.add('visible');
+    });
+    if (logoutItem) {
+      logoutItem.classList.add('hidden');
+      logoutItem.classList.remove('visible');
+    }
+    cartLinks.forEach((link) => {
+      const item = link.closest('li');
+      if (item) {
+        item.classList.add('hidden');
+        item.classList.remove('visible');
+      }
+    });
+    ordersLinks.forEach((link) => {
+      const item = link.closest('li');
+      if (item) {
+        item.classList.add('hidden');
+        item.classList.remove('visible');
+      }
     });
   }
 
