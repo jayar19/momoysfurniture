@@ -104,31 +104,6 @@ async function sendMailerSendEmail({ to, subject, html, text }) {
   return result?.messageId || null;
 }
 
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: gmailUser,
-      pass: gmailAppPassword
-    }
-  });
-
-  let info;
-  try {
-    info = await transporter.sendMail({
-      from: `"${fromName}" <${gmailUser}>`,
-      to: to.email,
-      subject,
-      text,
-      html
-    });
-  } catch (sendError) {
-    const error = new Error(sendError.message || 'Failed to send email verification code.');
-    error.status = 502;
-    throw error;
-  }
-
-  return info.messageId || null;
-
 async function uploadToImgBb({ imageBase64, fileName, mimeType }) {
   const apiKey = process.env.IMGBB_API_KEY;
 
