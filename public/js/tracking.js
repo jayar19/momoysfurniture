@@ -127,7 +127,7 @@ function renderTrackingStatus(order) {
   const statusEl = document.getElementById('tracking-status');
   const status = order.deliveryStatus || order.status || '';
 
-  if (status === 'out_for_delivery') {
+  if (status === 'in_transit' || status === 'out_for_delivery') {
     const updatedAt = order.currentLocation?.updatedAt
       ? new Date(order.currentLocation.updatedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
       : null;
@@ -143,46 +143,46 @@ function renderTrackingStatus(order) {
   } else {
     statusEl.innerHTML = `
       <div class="alert alert-error">
-        📦 Order is not yet out for delivery. Current status: <strong>${(status || 'pending').replace(/_/g, ' ')}</strong>
+        Order is not yet out for delivery. Current status: <strong>${(status || 'pending').replace(/_/g, ' ')}</strong>
       </div>
     `;
   }
 }
 
 // ─── Main: render map for a given order snapshot ──────────────────────────────
-// Cache geocoded destination so we don't re-geocode on every Firestore update
+// Cache destination coords to avoid redrawing route on every Firestore update
 let cachedDestCoords = null;
-let cachedAddress = null;
+let cachedDestKey = null;
 
 async function renderOrderOnMap(order) {
   renderOrderInfo(order);
   renderTrackingStatus(order);
 
   const status = order.deliveryStatus || order.status || '';
-  if (status !== 'out_for_delivery' && status !== 'delivered') return;
 
-  // Geocode destination only if address changed
-  const address = order.shippingAddress;
-  if (!address) return;
+  // Admin sets currentLocation = { lat, lng } via "Set Location" in dashboard
+  const adminCoords = order.currentLocation;
+  if (!adminCoords?.lat || !adminCoords?.lng) {
+    // No location set yet — nothing to draw
+    return;
+  }
 
   try {
-    if (address !== cachedAddress || !cachedDestCoords) {
-      cachedDestCoords = await geocodeAddress(address);
-      cachedAddress = address;
+    const destKey = `${adminCoords.lat},${adminCoords.lng}`;
 
-      // Place destination marker once
+    // Only redraw route if destination coords changed
+    if (destKey !== cachedDestKey) {
+      cachedDestCoords = { lat: adminCoords.lat, lng: adminCoords.lng };
+      cachedDestKey = destKey;
+
+      // Place / move destination marker
       if (destMarker) map.removeLayer(destMarker);
       destMarker = L.marker([cachedDestCoords.lat, cachedDestCoords.lng], { icon: makeIcon('🏠') })
         .addTo(map)
-        .bindPopup('Delivery Address');
+        .bindPopup(`Delivery Address<br><small>${order.shippingAddress || ''}</small>`);
 
       // Draw shop → destination route
       await drawRoute(SHOP_LOCATION, cachedDestCoords);
-    }
-
-    // Update driver marker if admin set a currentLocation
-    if (order.currentLocation?.lat && order.currentLocation?.lng) {
-      updateDriverMarker(order.currentLocation);
     }
 
   } catch (err) {
