@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const admin = require('firebase-admin');
-const nodemailer = require('nodemailer');
 const { verifyToken, verifyAdmin } = require('../middleware/auth');
 
 const db = admin.firestore();
@@ -77,36 +76,33 @@ function buildOtpEmailText({ code, fullName }) {
   return `${safeName}\n\nYour Momoy's Furniture verification code is: ${code}\n\nThis code expires in 10 minutes.\n\nIf you did not request this code, you can ignore this email.`;
 }
 
-function buildPasswordResetEmailHtml({ code, fullName }) {
-  const safeName = fullName ? `${fullName},` : 'Hello,';
-  return `
-    <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.6;">
-      <p>${safeName}</p>
-      <p>You requested to reset your Momoy's Furniture password. Your reset code is:</p>
-      <div style="font-size: 32px; font-weight: 700; letter-spacing: 8px; padding: 12px 18px; background: #eef6ff; border: 1px solid #60a5fa; display: inline-block; border-radius: 12px;">
-        ${code}
-      </div>
-      <p style="margin-top: 16px;">This code expires in 10 minutes.</p>
-      <p>If you did not request this password reset, you can ignore this email.</p>
-    </div>
-  `;
-}
-
-function buildPasswordResetEmailText({ code, fullName }) {
-  const safeName = fullName ? `${fullName},` : 'Hello,';
-  return `${safeName}\n\nYou requested to reset your Momoy's Furniture password. Your reset code is: ${code}\n\nThis code expires in 10 minutes.\n\nIf you did not request this password reset, you can ignore this email.`;
-}
+const Brevo = require('@getbrevo/brevo');
 
 async function sendMailerSendEmail({ to, subject, html, text }) {
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
-  const fromName = process.env.GMAIL_FROM_NAME || "Momoy's Furniture";
-
-  if (!gmailUser || !gmailAppPassword) {
-    const error = new Error('Email verification is not configured on the server. Please set GMAIL_USER and GMAIL_APP_PASSWORD.');
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) {
+    const error = new Error('Email is not configured. Please set BREVO_API_KEY.');
     error.status = 500;
     throw error;
   }
+
+  const client = Brevo.ApiClient.instance;
+  client.authentications['api-key'].apiKey = apiKey;
+
+  const api = new Brevo.TransactionalEmailsApi();
+  const fromName = process.env.GMAIL_FROM_NAME || "Momoy's Furniture";
+  const fromEmail = process.env.BREVO_FROM_EMAIL || process.env.GMAIL_USER;
+
+  const result = await api.sendTransacEmail({
+    sender: { name: fromName, email: fromEmail },
+    to: [{ email: to.email, name: to.name || to.email }],
+    subject,
+    htmlContent: html,
+    textContent: text
+  });
+
+  return result?.messageId || null;
+}
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -132,7 +128,6 @@ async function sendMailerSendEmail({ to, subject, html, text }) {
   }
 
   return info.messageId || null;
-}
 
 async function uploadToImgBb({ imageBase64, fileName, mimeType }) {
   const apiKey = process.env.IMGBB_API_KEY;
