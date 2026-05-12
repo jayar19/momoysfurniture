@@ -483,6 +483,8 @@
     let rotY = 0;
     let rotTimer = null;
     let baseDimensions = null;
+    let dimensionLabelRoot = null;
+    let dimensionLabelText = null;
 
     async function startCamera() {
       try {
@@ -546,14 +548,71 @@
     function updateDimensionDisplay() {
       if (!baseDimensions) {
         setDimensionText('--', '--', '--', 'Waiting for model size...');
+        updateFloatingDimensionLabel(null);
         return;
       }
 
+      const width = formatMeters(baseDimensions.width * currentScale);
+      const length = formatMeters(baseDimensions.length * currentScale);
+      const height = formatMeters(baseDimensions.height * currentScale);
       setDimensionText(
-        formatMeters(baseDimensions.width * currentScale),
-        formatMeters(baseDimensions.length * currentScale),
-        formatMeters(baseDimensions.height * currentScale),
+        width,
+        length,
+        height,
         `Updates automatically as you resize the model. Scale: ${currentScale.toFixed(2)}x`
+      );
+      updateFloatingDimensionLabel({ width, length, height });
+    }
+
+    function createFloatingDimensionLabel(marker) {
+      const root = document.createElement('a-entity');
+      root.setAttribute('position', '0 1 0');
+      root.setAttribute('rotation', '0 0 0');
+      root.setAttribute('visible', 'false');
+      root.id = 'dimension-label-root';
+
+      const background = document.createElement('a-plane');
+      background.setAttribute('width', '1.9');
+      background.setAttribute('height', '0.62');
+      background.setAttribute('color', '#111111');
+      background.setAttribute('opacity', '0.78');
+      background.setAttribute('material', 'shader: flat; side: double; transparent: true;');
+      background.setAttribute('position', '0 0 0');
+      root.appendChild(background);
+
+      const text = document.createElement('a-text');
+      text.setAttribute('value', 'Loading size...');
+      text.setAttribute('align', 'center');
+      text.setAttribute('color', '#FFDA1A');
+      text.setAttribute('width', '3.4');
+      text.setAttribute('wrap-count', '22');
+      text.setAttribute('anchor', 'center');
+      text.setAttribute('baseline', 'center');
+      text.setAttribute('position', '0 0 0.01');
+      text.setAttribute('side', 'double');
+      root.appendChild(text);
+
+      marker.appendChild(root);
+      dimensionLabelRoot = root;
+      dimensionLabelText = text;
+    }
+
+    function updateFloatingDimensionLabel(measurements) {
+      if (!dimensionLabelRoot || !dimensionLabelText) return;
+
+      if (!measurements || !baseDimensions) {
+        dimensionLabelRoot.setAttribute('visible', 'false');
+        return;
+      }
+
+      const scaledHeight = baseDimensions.height * currentScale;
+      const labelY = Math.max((scaledHeight / 2) + 0.45, 0.65);
+
+      dimensionLabelRoot.setAttribute('visible', 'true');
+      dimensionLabelRoot.setAttribute('position', `0 ${labelY.toFixed(3)} 0`);
+      dimensionLabelText.setAttribute(
+        'value',
+        `W ${measurements.width}\nL ${measurements.length}\nH ${measurements.height}`
       );
     }
 
@@ -570,6 +629,7 @@
       marker.setAttribute('smooth', 'true');
       marker.setAttribute('smoothCount', '5');
       marker.setAttribute('emitevents', 'true');
+      createFloatingDimensionLabel(marker);
 
       if (modelUrl && modelUrl.trim() !== '') {
         const model = document.createElement('a-entity');
