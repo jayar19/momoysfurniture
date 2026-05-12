@@ -491,39 +491,221 @@ async function updateOrderStatus(orderId) {
 
 // Open set location modal
 function openSetLocationModal(orderId) {
-  const today   = new Date().toISOString().split('T')[0];
+  const today    = new Date().toISOString().split('T')[0];
   const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   const content = `
-    <div class="form-group">
-      <label for="latitude">Latitude:</label>
-      <input type="number" id="latitude" step="0.000001" placeholder="e.g., 10.3157" class="form-control" style="width: 100%; padding: 0.75rem; border: 1px solid #bdc3c7; border-radius: 5px;">
-      <small style="color: #7f8c8d;">Example: Cebu City = 10.3157</small>
+    <div style="margin-bottom:1.25rem;">
+      <label style="font-weight:700;display:block;margin-bottom:0.5rem;">Location Input Method</label>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <button type="button" onclick="switchLocationTab('coords')"   id="tab-coords"   class="btn btn-primary"     style="flex:1;font-size:0.85rem;">📍 Lat / Lng</button>
+        <button type="button" onclick="switchLocationTab('address')"  id="tab-address"  class="btn btn-secondary"  style="flex:1;font-size:0.85rem;">🏠 From Order Address</button>
+        <button type="button" onclick="switchLocationTab('custom')"   id="tab-custom"   class="btn btn-secondary"  style="flex:1;font-size:0.85rem;">✏️ Custom Address</button>
+      </div>
     </div>
-    <div class="form-group">
-      <label for="longitude">Longitude:</label>
-      <input type="number" id="longitude" step="0.000001" placeholder="e.g., 123.8854" class="form-control" style="width: 100%; padding: 0.75rem; border: 1px solid #bdc3c7; border-radius: 5px;">
-      <small style="color: #7f8c8d;">Example: Cebu City = 123.8854</small>
+
+    <!-- Tab: Lat/Lng -->
+    <div id="loc-tab-coords">
+      <div class="form-group">
+        <label for="latitude">Latitude</label>
+        <input type="number" id="latitude" step="0.000001" placeholder="e.g. 10.6765" class="form-control">
+        <small style="color:#7f8c8d">Right-click any spot on Google Maps → copy the first number</small>
+      </div>
+      <div class="form-group">
+        <label for="longitude">Longitude</label>
+        <input type="number" id="longitude" step="0.000001" placeholder="e.g. 122.9509" class="form-control">
+        <small style="color:#7f8c8d">The second number from Google Maps</small>
+      </div>
     </div>
-    <div class="form-group">
-      <label for="estimated-delivery">Estimated Delivery Date:</label>
-      <input type="date" id="estimated-delivery" value="${nextWeek}" min="${today}" class="form-control" style="width: 100%; padding: 0.75rem; border: 1px solid #bdc3c7; border-radius: 5px;">
+
+    <!-- Tab: From order address -->
+    <div id="loc-tab-address" style="display:none;">
+      <div class="form-group">
+        <p style="margin:0 0 0.75rem;color:#444;">This will geocode the customer's delivery address from the order automatically.</p>
+        <div id="order-address-preview" style="padding:0.75rem;background:#f8f9fa;border-radius:6px;border:1px solid #dee2e6;color:#495057;font-size:0.9rem;">
+          Loading order address...
+        </div>
+      </div>
+      <button type="button" class="btn btn-secondary" style="width:100%;margin-top:0.5rem;" onclick="previewGeocodeAddress('${orderId}')">
+        🔍 Preview on Map
+      </button>
+      <div id="geocode-result" style="margin-top:0.75rem;font-size:0.85rem;color:#2ecc71;display:none;"></div>
     </div>
-    <button class="btn btn-primary" onclick="setDeliveryLocation('${orderId}')" style="width: 100%; margin-top: 1rem;">Set Location</button>
+
+    <!-- Tab: Custom address -->
+    <div id="loc-tab-custom" style="display:none;">
+      <div class="form-group">
+        <label for="custom-address">Type any address or landmark</label>
+        <input type="text" id="custom-address" placeholder="e.g. SM City Bacolod, Bacolod City" class="form-control">
+        <small style="color:#7f8c8d">Be as specific as possible for accurate results</small>
+      </div>
+      <button type="button" class="btn btn-secondary" style="width:100%;margin-top:0.5rem;" onclick="previewGeocodeCustomAddress()">
+        🔍 Preview on Map
+      </button>
+      <div id="custom-geocode-result" style="margin-top:0.75rem;font-size:0.85rem;color:#2ecc71;display:none;"></div>
+    </div>
+
+    <!-- Shared: Estimated delivery -->
+    <div class="form-group" style="margin-top:1.25rem;">
+      <label for="estimated-delivery">Estimated Delivery Date</label>
+      <input type="date" id="estimated-delivery" value="${nextWeek}" min="${today}" class="form-control">
+    </div>
+
+    <div id="location-modal-error" style="display:none;color:#e74c3c;font-size:0.9rem;margin-top:0.5rem;"></div>
+
+    <button class="btn btn-primary" onclick="setDeliveryLocation('${orderId}')" style="width:100%;margin-top:1rem;">
+      📌 Set Delivery Location
+    </button>
   `;
+
   showModal('Set Delivery Location', content);
+
+  // Load the order's shipping address for the "From Order Address" tab
+  loadOrderAddressForModal(orderId);
+}
+
+function switchLocationTab(tab) {
+  ['coords','address','custom'].forEach(t => {
+    document.getElementById(`loc-tab-${t}`).style.display  = t === tab ? 'block' : 'none';
+    const btn = document.getElementById(`tab-${t}`);
+    if (btn) {
+      btn.className = t === tab ? 'btn btn-primary' : 'btn btn-secondary';
+    }
+  });
+}
+
+async function loadOrderAddressForModal(orderId) {
+  const preview = document.getElementById('order-address-preview');
+  if (!preview) return;
+  try {
+    const res = await authenticatedFetch(`${API_BASE_URL}/orders/${orderId}`);
+    const order = await res.json();
+    const addr = (order.shippingAddress || '').split('\n')[0].trim();
+    preview.textContent = addr || 'No address found on this order.';
+    preview.dataset.address = addr;
+  } catch {
+    preview.textContent = 'Could not load order address.';
+  }
+}
+
+async function geocodeText(text) {
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(text)}&format=json&limit=1`,
+    { headers: { 'Accept-Language': 'en' } }
+  );
+  const data = await res.json();
+  if (!data.length) throw new Error(`Could not find coordinates for: "${text}"`);
+  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), display: data[0].display_name };
+}
+
+async function previewGeocodeAddress(orderId) {
+  const preview = document.getElementById('order-address-preview');
+  const resultEl = document.getElementById('geocode-result');
+  const address = preview?.dataset?.address;
+
+  if (!address) {
+    resultEl.style.display = 'block';
+    resultEl.style.color = '#e74c3c';
+    resultEl.textContent = 'No address available on this order.';
+    return;
+  }
+
+  resultEl.style.display = 'block';
+  resultEl.style.color = '#666';
+  resultEl.textContent = 'Searching...';
+
+  try {
+    const coords = await geocodeText(address);
+    resultEl.style.color = '#27ae60';
+    resultEl.textContent = `✓ Found: ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`;
+    resultEl.dataset.lat = coords.lat;
+    resultEl.dataset.lng = coords.lng;
+  } catch (err) {
+    resultEl.style.color = '#e74c3c';
+    resultEl.textContent = `✗ ${err.message}`;
+  }
+}
+
+async function previewGeocodeCustomAddress() {
+  const input   = document.getElementById('custom-address');
+  const resultEl = document.getElementById('custom-geocode-result');
+  const address = input?.value?.trim();
+
+  if (!address) {
+    resultEl.style.display = 'block';
+    resultEl.style.color = '#e74c3c';
+    resultEl.textContent = 'Please type an address first.';
+    return;
+  }
+
+  resultEl.style.display = 'block';
+  resultEl.style.color = '#666';
+  resultEl.textContent = 'Searching...';
+
+  try {
+    const coords = await geocodeText(address);
+    resultEl.style.color = '#27ae60';
+    resultEl.textContent = `✓ Found: ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`;
+    resultEl.dataset.lat = coords.lat;
+    resultEl.dataset.lng = coords.lng;
+  } catch (err) {
+    resultEl.style.color = '#e74c3c';
+    resultEl.textContent = `✗ ${err.message}`;
+  }
 }
 
 // Set delivery location
 async function setDeliveryLocation(orderId) {
-  const lat  = parseFloat(document.getElementById('latitude').value);
-  const lng  = parseFloat(document.getElementById('longitude').value);
-  const estimatedDelivery = document.getElementById('estimated-delivery').value;
+  const estimatedDelivery = document.getElementById('estimated-delivery')?.value;
+  const errorEl = document.getElementById('location-modal-error');
+  if (errorEl) errorEl.style.display = 'none';
 
-  if (!lat || !lng) { alert('Please enter both latitude and longitude'); return; }
-  if (!estimatedDelivery) { alert('Please select an estimated delivery date'); return; }
+  if (!estimatedDelivery) {
+    if (errorEl) { errorEl.textContent = 'Please select an estimated delivery date.'; errorEl.style.display = 'block'; }
+    return;
+  }
+
+  // Determine which tab is active
+  const coordsVisible  = document.getElementById('loc-tab-coords')?.style.display  !== 'none';
+  const addressVisible = document.getElementById('loc-tab-address')?.style.display !== 'none';
+  const customVisible  = document.getElementById('loc-tab-custom')?.style.display  !== 'none';
+
+  let lat, lng;
 
   try {
+    if (coordsVisible) {
+      lat = parseFloat(document.getElementById('latitude')?.value);
+      lng = parseFloat(document.getElementById('longitude')?.value);
+      if (isNaN(lat) || isNaN(lng)) throw new Error('Please enter valid latitude and longitude.');
+
+    } else if (addressVisible) {
+      const resultEl = document.getElementById('geocode-result');
+      if (!resultEl?.dataset?.lat) {
+        // Auto-geocode if admin didn't preview first
+        const preview = document.getElementById('order-address-preview');
+        const address = preview?.dataset?.address;
+        if (!address) throw new Error('No order address available to geocode.');
+        const coords = await geocodeText(address);
+        lat = coords.lat; lng = coords.lng;
+      } else {
+        lat = parseFloat(resultEl.dataset.lat);
+        lng = parseFloat(resultEl.dataset.lng);
+      }
+
+    } else if (customVisible) {
+      const resultEl = document.getElementById('custom-geocode-result');
+      if (!resultEl?.dataset?.lat) {
+        // Auto-geocode if admin didn't preview first
+        const address = document.getElementById('custom-address')?.value?.trim();
+        if (!address) throw new Error('Please enter a custom address.');
+        const coords = await geocodeText(address);
+        lat = coords.lat; lng = coords.lng;
+      } else {
+        lat = parseFloat(resultEl.dataset.lat);
+        lng = parseFloat(resultEl.dataset.lng);
+      }
+    }
+
     const response = await authenticatedFetch(`${API_BASE_URL}/orders/${orderId}/location`, {
       method: 'PUT',
       body: JSON.stringify({ lat, lng, estimatedDelivery: new Date(estimatedDelivery).toISOString() })
@@ -535,11 +717,11 @@ async function setDeliveryLocation(orderId) {
       loadAdminOrders();
     } else {
       const error = await response.json();
-      alert('Failed to update location: ' + error.error);
+      throw new Error(error.error || 'Failed to update location.');
     }
-  } catch (error) {
-    console.error('Error updating location:', error);
-    alert('Failed to update delivery location');
+  } catch (err) {
+    if (errorEl) { errorEl.textContent = err.message; errorEl.style.display = 'block'; }
+    else alert(err.message);
   }
 }
 
