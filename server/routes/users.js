@@ -60,38 +60,50 @@ function buildOtpEmailHtml({ code, fullName }) {
   `;
 }
 
-async function sendResendEmail({ to, subject, html }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
+function buildOtpEmailText({ code, fullName }) {
+  const safeName = fullName ? `${fullName},` : 'Hello,';
+  return `${safeName}\n\nYour Momoy's Furniture verification code is: ${code}\n\nThis code expires in 10 minutes.\n\nIf you did not request this code, you can ignore this email.`;
+}
+
+async function sendMailerSendEmail({ to, subject, html, text }) {
+  const apiKey = process.env.MAILERSEND_API_KEY;
+  const from = process.env.MAILERSEND_FROM_EMAIL;
+  const fromName = process.env.MAILERSEND_FROM_NAME || "Momoy's Furniture";
 
   if (!apiKey || !from) {
-    const error = new Error('Email verification is not configured on the server. Please set RESEND_API_KEY and RESEND_FROM_EMAIL.');
+    const error = new Error('Email verification is not configured on the server. Please set MAILERSEND_API_KEY and MAILERSEND_FROM_EMAIL.');
     error.status = 500;
     throw error;
   }
 
-  const response = await fetch('https://api.resend.com/emails', {
+  const response = await fetch('https://api.mailersend.com/v1/email', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
       Authorization: `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      from,
+      from: {
+        email: from,
+        name: fromName
+      },
       to: [to],
       subject,
-      html
+      html,
+      text
     })
   });
 
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok || !payload?.id) {
+  const messageId = response.headers.get('x-message-id') || payload?.id || payload?.message_id || null;
+  if (!response.ok || !messageId) {
     const error = new Error(payload?.message || payload?.error || 'Failed to send email verification code.');
     error.status = 502;
     throw error;
   }
 
-  return payload.id;
+  return messageId;
 }
 
 async function uploadToImgBb({ imageBase64, fileName, mimeType }) {
@@ -234,10 +246,11 @@ router.post('/me/email-verification/send-otp', verifyToken, async (req, res) => 
 
     const code = generateOtpCode();
     const expiresAt = new Date(Date.now() + (10 * 60 * 1000)).toISOString();
-    const emailId = await sendResendEmail({
-      to: email,
+    const emailId = await sendMailerSendEmail({
+      to: { email, name: userData.fullName || email },
       subject: 'Your Momoy\'s Furniture verification code',
-      html: buildOtpEmailHtml({ code, fullName: userData.fullName || '' })
+      html: buildOtpEmailHtml({ code, fullName: userData.fullName || '' }),
+      text: buildOtpEmailText({ code, fullName: userData.fullName || '' })
     });
 
     await userRef.set({
