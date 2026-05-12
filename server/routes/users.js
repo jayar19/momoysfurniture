@@ -5,6 +5,7 @@ const nodemailer = require('nodemailer');
 const { verifyToken, verifyAdmin } = require('../middleware/auth');
 
 const db = admin.firestore();
+const OTP_RESEND_COOLDOWN_MS = 2 * 60 * 1000;
 
 function sanitizeUser(doc) {
   const data = doc.data() || {};
@@ -42,6 +43,16 @@ function buildEmailVerificationResetFields() {
   };
 }
 
+function buildPasswordResetFields() {
+  return {
+    passwordResetOtpCode: admin.firestore.FieldValue.delete(),
+    passwordResetOtpExpiresAt: admin.firestore.FieldValue.delete(),
+    passwordResetOtpSentAt: admin.firestore.FieldValue.delete(),
+    passwordResetLastEmailId: admin.firestore.FieldValue.delete(),
+    passwordResetVerifiedAt: admin.firestore.FieldValue.delete()
+  };
+}
+
 function generateOtpCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
@@ -64,6 +75,26 @@ function buildOtpEmailHtml({ code, fullName }) {
 function buildOtpEmailText({ code, fullName }) {
   const safeName = fullName ? `${fullName},` : 'Hello,';
   return `${safeName}\n\nYour Momoy's Furniture verification code is: ${code}\n\nThis code expires in 10 minutes.\n\nIf you did not request this code, you can ignore this email.`;
+}
+
+function buildPasswordResetEmailHtml({ code, fullName }) {
+  const safeName = fullName ? `${fullName},` : 'Hello,';
+  return `
+    <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.6;">
+      <p>${safeName}</p>
+      <p>You requested to reset your Momoy's Furniture password. Your reset code is:</p>
+      <div style="font-size: 32px; font-weight: 700; letter-spacing: 8px; padding: 12px 18px; background: #eef6ff; border: 1px solid #60a5fa; display: inline-block; border-radius: 12px;">
+        ${code}
+      </div>
+      <p style="margin-top: 16px;">This code expires in 10 minutes.</p>
+      <p>If you did not request this password reset, you can ignore this email.</p>
+    </div>
+  `;
+}
+
+function buildPasswordResetEmailText({ code, fullName }) {
+  const safeName = fullName ? `${fullName},` : 'Hello,';
+  return `${safeName}\n\nYou requested to reset your Momoy's Furniture password. Your reset code is: ${code}\n\nThis code expires in 10 minutes.\n\nIf you did not request this password reset, you can ignore this email.`;
 }
 
 async function sendMailerSendEmail({ to, subject, html, text }) {
@@ -237,8 +268,8 @@ router.post('/me/email-verification/send-otp', verifyToken, async (req, res) => 
     }
 
     const lastSentAt = userData.emailOtpSentAt ? new Date(userData.emailOtpSentAt).getTime() : 0;
-    if (lastSentAt && (Date.now() - lastSentAt) < 60 * 1000) {
-      return res.status(429).json({ error: 'Please wait at least 1 minute before requesting another code.' });
+    if (lastSentAt && (Date.now() - lastSentAt) < OTP_RESEND_COOLDOWN_MS) {
+      return res.status(429).json({ error: 'Please wait at least 2 minutes before requesting another code.' });
     }
 
     const code = generateOtpCode();
@@ -311,6 +342,118 @@ router.post('/me/email-verification/verify', verifyToken, async (req, res) => {
     res.json(sanitizeUser(updatedDoc));
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Request password reset OTP
+router.post('/password-reset/request', async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required.' });
+    }
+
+    let authUser;
+    try {
+      authUser = await admin.auth().getUserByEmail(email);
+    } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+        return res.json({ message: 'If an account exists for this email, a reset code has been sent.' });
+      }
+      throw error;
+    }
+
+    const userRef = db.collection('users').doc(authUser.uid);
+    const userDoc = await userRef.get();
+    const userData = userDoc.exists ? (userDoc.data() || {}) : {};
+    const lastSentAt = userData.passwordResetOtpSentAt ? new Date(userData.passwordResetOtpSentAt).getTime() : 0;
+
+    if (lastSentAt && (Date.now() - lastSentAt) < OTP_RESEND_COOLDOWN_MS) {
+      return res.status(429).json({ error: 'Please wait at least 2 minutes before requesting another reset code.' });
+    }
+
+    const code = generateOtpCode();
+    const expiresAt = new Date(Date.now() + (10 * 60 * 1000)).toISOString();
+    const emailId = await sendMailerSendEmail({
+      to: { email, name: userData.fullName || email },
+      subject: 'Your Momoy\'s Furniture password reset code',
+      html: buildPasswordResetEmailHtml({ code, fullName: userData.fullName || '' }),
+      text: buildPasswordResetEmailText({ code, fullName: userData.fullName || '' })
+    });
+
+    await userRef.set({
+      email,
+      fullName: userData.fullName || authUser.displayName || '',
+      role: userData.role || 'customer',
+      passwordResetOtpCode: code,
+      passwordResetOtpExpiresAt: expiresAt,
+      passwordResetOtpSentAt: new Date().toISOString(),
+      passwordResetLastEmailId: emailId,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    res.json({ message: 'If an account exists for this email, a reset code has been sent.' });
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.message });
+  }
+});
+
+// Confirm password reset with OTP
+router.post('/password-reset/confirm', async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const code = String(req.body?.code || '').trim();
+    const newPassword = String(req.body?.newPassword || '');
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required.' });
+    }
+
+    if (!/^\d{6}$/.test(code)) {
+      return res.status(400).json({ error: 'Please enter a valid 6-digit reset code.' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters.' });
+    }
+
+    let authUser;
+    try {
+      authUser = await admin.auth().getUserByEmail(email);
+    } catch (error) {
+      if (error.code === 'auth/user-not-found') {
+        return res.status(400).json({ error: 'No account found for that email.' });
+      }
+      throw error;
+    }
+
+    const userRef = db.collection('users').doc(authUser.uid);
+    const userDoc = await userRef.get();
+    const userData = userDoc.exists ? (userDoc.data() || {}) : {};
+    const expiresAt = userData.passwordResetOtpExpiresAt ? new Date(userData.passwordResetOtpExpiresAt).getTime() : 0;
+
+    if (!userData.passwordResetOtpCode || !expiresAt) {
+      return res.status(400).json({ error: 'No password reset code has been sent yet.' });
+    }
+
+    if (Date.now() > expiresAt) {
+      return res.status(400).json({ error: 'This reset code has expired. Please request a new one.' });
+    }
+
+    if (userData.passwordResetOtpCode !== code) {
+      return res.status(400).json({ error: 'The reset code is incorrect.' });
+    }
+
+    await admin.auth().updateUser(authUser.uid, { password: newPassword });
+    await userRef.set({
+      ...buildPasswordResetFields(),
+      passwordResetVerifiedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    res.json({ message: 'Password reset successful. You can now log in with your new password.' });
+  } catch (error) {
+    res.status(error.status || 500).json({ error: error.message });
   }
 });
 

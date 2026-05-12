@@ -1,4 +1,5 @@
 let cartVerificationProfile = null;
+let cartEmailOtpTimer = null;
 
 function getCheckoutButton() {
   return document.getElementById('checkout-btn');
@@ -66,6 +67,7 @@ function renderCartVerificationCard(profile) {
               <button type="button" id="send-email-otp-btn" class="btn btn-secondary">Send OTP Code</button>
               <input id="email-verification-code" type="text" inputmode="numeric" pattern="\\d{6}" maxlength="6" placeholder="Enter 6-digit code" style="flex: 1 1 180px; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px;">
             </div>
+            <p id="email-otp-timer" style="margin: 0; color: #64748b; font-size: 0.9rem;"></p>
             <button type="submit" class="btn btn-primary" style="width: fit-content;">Verify Email</button>
           </form>
         `}
@@ -112,6 +114,44 @@ function renderCartVerificationCard(profile) {
   const sendOtpBtn = document.getElementById('send-email-otp-btn');
   if (sendOtpBtn) {
     sendOtpBtn.addEventListener('click', sendEmailOtpFromCart);
+  }
+
+  syncCartEmailOtpTimer(record);
+}
+
+function syncCartEmailOtpTimer(record) {
+  const button = document.getElementById('send-email-otp-btn');
+  const timerText = document.getElementById('email-otp-timer');
+  if (cartEmailOtpTimer) {
+    clearInterval(cartEmailOtpTimer);
+    cartEmailOtpTimer = null;
+  }
+  if (!button || !timerText || record.emailVerified) return;
+
+  const updateTimer = () => {
+    const remainingMs = userVerification.getOtpRemainingMs(record.emailOtpSentAt);
+    if (remainingMs <= 0) {
+      button.disabled = false;
+      button.textContent = 'Send OTP Code';
+      timerText.textContent = '';
+      if (cartEmailOtpTimer) {
+        clearInterval(cartEmailOtpTimer);
+        cartEmailOtpTimer = null;
+      }
+      return;
+    }
+
+    const totalSeconds = Math.ceil(remainingMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    button.disabled = true;
+    button.textContent = `Resend in ${minutes}:${String(seconds).padStart(2, '0')}`;
+    timerText.textContent = 'You can request a new email code after 2 minutes.';
+  };
+
+  updateTimer();
+  if (userVerification.getOtpRemainingMs(record.emailOtpSentAt) > 0) {
+    cartEmailOtpTimer = setInterval(updateTimer, 1000);
   }
 }
 

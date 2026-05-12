@@ -1,3 +1,5 @@
+const OTP_RESEND_COOLDOWN_MS = 2 * 60 * 1000;
+
 function createVerificationImageData(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -38,6 +40,7 @@ function getVerificationRecord(profile = {}) {
     orderUsedWhilePending,
     emailVerified,
     emailStatusLabel: emailVerified ? 'Verified' : 'Verification Required',
+    emailOtpSentAt: profile.emailOtpSentAt || '',
     canPlaceOrder: hasUploadedId && emailVerified && (isApproved || !orderUsedWhilePending),
     imageUrl: profile.verificationDisplayUrl || profile.verificationIdUrl || '',
     thumbUrl: profile.verificationThumbUrl || profile.verificationDisplayUrl || profile.verificationIdUrl || '',
@@ -66,6 +69,13 @@ function formatVerificationDate(value) {
     hour: 'numeric',
     minute: '2-digit'
   });
+}
+
+function getOtpRemainingMs(sentAt) {
+  if (!sentAt) return 0;
+  const sentTime = new Date(sentAt).getTime();
+  if (!sentTime) return 0;
+  return Math.max(0, OTP_RESEND_COOLDOWN_MS - (Date.now() - sentTime));
 }
 
 async function uploadVerificationId(file, idLabel = 'Government ID') {
@@ -134,6 +144,7 @@ window.userVerification = {
   loadCurrentUserProfile,
   getVerificationRecord,
   formatVerificationDate,
+  getOtpRemainingMs,
   uploadVerificationId,
   sendEmailVerificationOtp,
   verifyEmailOtp

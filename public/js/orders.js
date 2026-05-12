@@ -4,6 +4,7 @@ let activeOrderChatId = null;
 let loadedOrders = [];
 let orderAiSessions = loadOrderAiSessions();
 let ordersVerificationProfile = null;
+let ordersEmailOtpTimer = null;
 
 function getVerificationBadgeMarkup(record) {
   const color = record.isApproved ? '#1f7a3e' : (record.hasUploadedId ? '#9a6700' : '#9f1239');
@@ -55,6 +56,7 @@ function renderProfileVerificationPanel(profile) {
               <button type="button" id="orders-send-email-otp-btn" class="btn btn-secondary">Send OTP Code</button>
               <input id="orders-email-verification-code" type="text" inputmode="numeric" pattern="\\d{6}" maxlength="6" placeholder="Enter 6-digit code" style="flex: 1 1 180px; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px;">
             </div>
+            <p id="orders-email-otp-timer" style="margin: 0; color: #64748b; font-size: 0.9rem;"></p>
             <button type="submit" class="btn btn-primary" style="width: fit-content;">Verify Email</button>
           </form>
         `}
@@ -100,6 +102,44 @@ function renderProfileVerificationPanel(profile) {
   const sendOtpBtn = document.getElementById('orders-send-email-otp-btn');
   if (sendOtpBtn) {
     sendOtpBtn.addEventListener('click', sendEmailOtpFromOrders);
+  }
+
+  syncOrdersEmailOtpTimer(record);
+}
+
+function syncOrdersEmailOtpTimer(record) {
+  const button = document.getElementById('orders-send-email-otp-btn');
+  const timerText = document.getElementById('orders-email-otp-timer');
+  if (ordersEmailOtpTimer) {
+    clearInterval(ordersEmailOtpTimer);
+    ordersEmailOtpTimer = null;
+  }
+  if (!button || !timerText || record.emailVerified) return;
+
+  const updateTimer = () => {
+    const remainingMs = userVerification.getOtpRemainingMs(record.emailOtpSentAt);
+    if (remainingMs <= 0) {
+      button.disabled = false;
+      button.textContent = 'Send OTP Code';
+      timerText.textContent = '';
+      if (ordersEmailOtpTimer) {
+        clearInterval(ordersEmailOtpTimer);
+        ordersEmailOtpTimer = null;
+      }
+      return;
+    }
+
+    const totalSeconds = Math.ceil(remainingMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    button.disabled = true;
+    button.textContent = `Resend in ${minutes}:${String(seconds).padStart(2, '0')}`;
+    timerText.textContent = 'You can request a new email code after 2 minutes.';
+  };
+
+  updateTimer();
+  if (userVerification.getOtpRemainingMs(record.emailOtpSentAt) > 0) {
+    ordersEmailOtpTimer = setInterval(updateTimer, 1000);
   }
 }
 

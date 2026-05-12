@@ -11,7 +11,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
-    /* ── Tab switcher ── */
     .auth-tabs {
       display: flex;
       border-radius: 999px;
@@ -40,20 +39,20 @@
       color: var(--dark);
     }
 
-    /* ── Form panels ── */
     .auth-panel {
       display: none;
       animation: fadeUp 0.3s ease both;
     }
 
-    .auth-panel.active { display: block; }
+    .auth-panel.active {
+      display: block;
+    }
 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    /* ── Form title ── */
     .auth-title {
       text-align: center;
       margin-bottom: 1.5rem;
@@ -63,7 +62,6 @@
       font-weight: 700;
     }
 
-    /* ── Input styling override for dark form ── */
     .form-container .form-group label {
       color: rgba(255,255,255,0.9);
     }
@@ -85,7 +83,6 @@
       background: rgba(255,255,255,0.22);
     }
 
-    /* ── Submit button ── */
     .auth-submit {
       width: 100%;
       padding: 0.85rem;
@@ -106,7 +103,6 @@
       transform: translateY(-1px);
     }
 
-    /* ── Message ── */
     .auth-message {
       display: none;
       padding: 0.75rem 1rem;
@@ -117,9 +113,8 @@
     }
 
     .auth-message.success { background: rgba(39,174,96,0.25); color: #afffcb; border: 1px solid rgba(39,174,96,0.4); }
-    .auth-message.error   { background: rgba(231,76,60,0.25);  color: #ffbdbd; border: 1px solid rgba(231,76,60,0.4); }
+    .auth-message.error { background: rgba(231,76,60,0.25); color: #ffbdbd; border: 1px solid rgba(231,76,60,0.4); }
 
-    /* ── Center the form vertically ── */
     .formcontainer {
       min-height: calc(100vh - 75px);
       display: flex;
@@ -132,11 +127,96 @@
       width: 100%;
       max-width: 420px;
     }
+
+    .auth-link-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: -0.25rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .auth-link-btn {
+      background: none;
+      border: none;
+      color: #ffe082;
+      font: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0;
+    }
+
+    .auth-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.72);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 3000;
+    }
+
+    .auth-modal.open {
+      display: flex;
+    }
+
+    .auth-modal-card {
+      width: min(100%, 460px);
+      background: rgba(16,16,16,0.92);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .auth-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.1rem 1.25rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .auth-modal-title {
+      font-family: var(--serif);
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .auth-modal-close {
+      background: rgba(255,255,255,0.08);
+      border: none;
+      color: #fff;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.25rem;
+    }
+
+    .auth-modal-body {
+      padding: 1.25rem;
+    }
+
+    .auth-modal-note {
+      color: rgba(255,255,255,0.72);
+      font-size: 0.92rem;
+      margin-bottom: 1rem;
+      line-height: 1.6;
+    }
+
+    .otp-timer-text {
+      margin: 0.15rem 0 0.25rem;
+      color: rgba(255,255,255,0.72);
+      font-size: 0.9rem;
+      min-height: 1.2rem;
+    }
   </style>
 </head>
 <body class="formbody">
-
-  <!-- Nav (matching index.html) -->
   <nav>
     <div class="nav-container">
       <a href="/" class="nav-brand">
@@ -153,17 +233,13 @@
 
   <div class="formcontainer">
     <div class="form-container">
-
-      <!-- Tab Switcher -->
       <div class="auth-tabs">
-        <button class="auth-tab active" id="tab-login"    onclick="switchTab('login')">Login</button>
-        <button class="auth-tab"        id="tab-register" onclick="switchTab('register')">Sign Up</button>
+        <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Login</button>
+        <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Sign Up</button>
       </div>
 
-      <!-- Shared message -->
       <div class="auth-message" id="auth-message"></div>
 
-      <!-- ── Login Panel ── -->
       <div class="auth-panel active" id="panel-login">
         <h2 class="auth-title">Welcome Back</h2>
         <form id="login-form">
@@ -175,11 +251,13 @@
             <label for="password">Password</label>
             <input type="password" id="password" required placeholder="Enter your password">
           </div>
+          <div class="auth-link-row">
+            <button type="button" class="auth-link-btn" id="forgot-password-btn">Forgot password?</button>
+          </div>
           <button type="submit" class="auth-submit">Login</button>
         </form>
       </div>
 
-      <!-- ── Sign Up Panel ── -->
       <div class="auth-panel" id="panel-register">
         <h2 class="auth-title">Create an Account</h2>
         <form id="register-form">
@@ -198,7 +276,38 @@
           <button type="submit" class="auth-submit">Create Account</button>
         </form>
       </div>
+    </div>
+  </div>
 
+  <div id="forgot-password-modal" class="auth-modal" aria-hidden="true">
+    <div class="auth-modal-card" role="dialog" aria-modal="true" aria-labelledby="forgot-password-title">
+      <div class="auth-modal-header">
+        <div class="auth-modal-title" id="forgot-password-title">Reset Password</div>
+        <button type="button" class="auth-modal-close" id="forgot-password-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="auth-modal-body">
+        <div class="auth-message" id="forgot-password-message"></div>
+        <p class="auth-modal-note">Enter the Gmail address you used for your account. We will send a one-time code there before you can set a new password.</p>
+        <form id="forgot-password-form">
+          <div class="form-group">
+            <label for="reset-email">Gmail Address</label>
+            <input type="email" id="reset-email" required placeholder="your@gmail.com">
+          </div>
+          <div class="form-group">
+            <label for="reset-code">OTP Code</label>
+            <input type="text" id="reset-code" inputmode="numeric" maxlength="6" pattern="\d{6}" placeholder="Enter 6-digit code">
+          </div>
+          <p class="otp-timer-text" id="reset-otp-timer"></p>
+          <div class="form-group">
+            <label for="reset-new-password">New Password</label>
+            <input type="password" id="reset-new-password" minlength="6" placeholder="At least 6 characters">
+          </div>
+          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem;">
+            <button type="button" class="auth-submit" id="send-reset-otp-btn" style="flex: 1 1 180px;">Send OTP Code</button>
+            <button type="submit" class="auth-submit" style="flex: 1 1 180px;">Reset Password</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -211,7 +320,10 @@
   <script src="/js/mobile-nav.js"></script>
 
   <script>
-    // ── Tab switching ──
+    const OTP_RESEND_COOLDOWN_MS = 2 * 60 * 1000;
+    let passwordResetOtpSentAt = '';
+    let passwordResetOtpTimer = null;
+
     function switchTab(tab) {
       document.getElementById('panel-login').classList.toggle('active', tab === 'login');
       document.getElementById('panel-register').classList.toggle('active', tab === 'register');
@@ -220,12 +332,10 @@
       hideMessage();
     }
 
-    // If URL has ?tab=register, open signup directly
     if (new URLSearchParams(window.location.search).get('tab') === 'register') {
       switchTab('register');
     }
 
-    // ── Message helper ──
     function showAuthMessage(msg, type) {
       const el = document.getElementById('auth-message');
       el.textContent = msg;
@@ -238,7 +348,77 @@
       el.style.display = 'none';
     }
 
-    // ── Login form ──
+    function showForgotPasswordMessage(msg, type) {
+      const el = document.getElementById('forgot-password-message');
+      el.textContent = msg;
+      el.className = `auth-message ${type}`;
+      el.style.display = 'block';
+    }
+
+    function hideForgotPasswordMessage() {
+      const el = document.getElementById('forgot-password-message');
+      el.style.display = 'none';
+    }
+
+    function openForgotPasswordModal() {
+      const loginEmail = document.getElementById('email')?.value?.trim();
+      if (loginEmail) {
+        document.getElementById('reset-email').value = loginEmail;
+      }
+      hideForgotPasswordMessage();
+      document.getElementById('forgot-password-modal').classList.add('open');
+      document.getElementById('forgot-password-modal').setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeForgotPasswordModal() {
+      document.getElementById('forgot-password-modal').classList.remove('open');
+      document.getElementById('forgot-password-modal').setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    function getOtpRemainingMs(sentAt) {
+      if (!sentAt) return 0;
+      const sentTime = new Date(sentAt).getTime();
+      if (!sentTime) return 0;
+      return Math.max(0, OTP_RESEND_COOLDOWN_MS - (Date.now() - sentTime));
+    }
+
+    function syncPasswordResetOtpTimer() {
+      const button = document.getElementById('send-reset-otp-btn');
+      const timerText = document.getElementById('reset-otp-timer');
+      if (passwordResetOtpTimer) {
+        clearInterval(passwordResetOtpTimer);
+        passwordResetOtpTimer = null;
+      }
+
+      const updateTimer = () => {
+        const remainingMs = getOtpRemainingMs(passwordResetOtpSentAt);
+        if (remainingMs <= 0) {
+          button.disabled = false;
+          button.textContent = 'Send OTP Code';
+          timerText.textContent = '';
+          if (passwordResetOtpTimer) {
+            clearInterval(passwordResetOtpTimer);
+            passwordResetOtpTimer = null;
+          }
+          return;
+        }
+
+        const totalSeconds = Math.ceil(remainingMs / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        button.disabled = true;
+        button.textContent = `Resend in ${minutes}:${String(seconds).padStart(2, '0')}`;
+        timerText.textContent = 'You can request a new reset code after 2 minutes.';
+      };
+
+      updateTimer();
+      if (getOtpRemainingMs(passwordResetOtpSentAt) > 0) {
+        passwordResetOtpTimer = setInterval(updateTimer, 1000);
+      }
+    }
+
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = e.target.querySelector('.auth-submit');
@@ -246,26 +426,19 @@
       btn.disabled = true;
       hideMessage();
 
-      const email    = document.getElementById('email').value.trim();
+      const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
 
       try {
         const cred = await auth.signInWithEmailAndPassword(email, password);
-
-        // Check role in Firestore
         const userDoc = await db.collection('users').doc(cred.user.uid).get();
         const role = userDoc.exists ? userDoc.data().role : 'customer';
 
         showAuthMessage('Login successful! Redirecting...', 'success');
 
         setTimeout(() => {
-          if (role === 'admin') {
-            window.location.href = '/admin/dashboard.html';
-          } else {
-            window.location.href = '/products.html';
-          }
+          window.location.href = role === 'admin' ? '/admin/dashboard.html' : '/products.html';
         }, 800);
-
       } catch (err) {
         showAuthMessage(friendlyError(err.code), 'error');
         btn.textContent = 'Login';
@@ -273,7 +446,6 @@
       }
     });
 
-    // ── Register form ──
     document.getElementById('register-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = e.target.querySelector('.auth-submit');
@@ -282,12 +454,11 @@
       hideMessage();
 
       const fullName = document.getElementById('reg-fullName').value.trim();
-      const email    = document.getElementById('reg-email').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
       const password = document.getElementById('reg-password').value;
 
       try {
         const cred = await auth.createUserWithEmailAndPassword(email, password);
-        // Save user profile to Firestore
         await db.collection('users').doc(cred.user.uid).set({
           fullName,
           email,
@@ -304,26 +475,107 @@
       }
     });
 
-    // ── Friendly Firebase error messages ──
     function friendlyError(code) {
       const map = {
-        'auth/user-not-found':        'No account found with that email.',
-        'auth/wrong-password':        'Incorrect password. Please try again.',
-        'auth/invalid-email':         'Please enter a valid email address.',
-        'auth/email-already-in-use':  'An account with this email already exists.',
-        'auth/weak-password':         'Password must be at least 6 characters.',
-        'auth/too-many-requests':     'Too many attempts. Please try again later.',
-        // Firebase v9 compat consolidates wrong-password + user-not-found into this
-        'auth/invalid-credential':    'Incorrect email or password. Please try again.',
-        'auth/invalid-login-credentials': 'Incorrect email or password. Please try again.',
+        'auth/user-not-found': 'No account found with that email.',
+        'auth/wrong-password': 'Incorrect password. Please try again.',
+        'auth/invalid-email': 'Please enter a valid email address.',
+        'auth/email-already-in-use': 'An account with this email already exists.',
+        'auth/weak-password': 'Password must be at least 6 characters.',
+        'auth/too-many-requests': 'Too many attempts. Please try again later.',
+        'auth/invalid-credential': 'Incorrect email or password. Please try again.',
+        'auth/invalid-login-credentials': 'Incorrect email or password. Please try again.'
       };
       return map[code] || `Something went wrong (${code}). Please try again.`;
     }
 
-    // ── Nav scroll hide ──
+    document.getElementById('forgot-password-btn').addEventListener('click', openForgotPasswordModal);
+    document.getElementById('forgot-password-close').addEventListener('click', closeForgotPasswordModal);
+    document.getElementById('forgot-password-modal').addEventListener('click', (event) => {
+      if (event.target === document.getElementById('forgot-password-modal')) closeForgotPasswordModal();
+    });
+
+    document.getElementById('send-reset-otp-btn').addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      const originalText = button.textContent;
+      const email = document.getElementById('reset-email').value.trim();
+
+      hideForgotPasswordMessage();
+      if (!email) {
+        showForgotPasswordMessage('Enter your email address first.', 'error');
+        return;
+      }
+
+      try {
+        button.disabled = true;
+        button.textContent = 'Sending...';
+        const response = await fetch(`${API_BASE_URL}/users/password-reset/request`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload.error || 'Failed to send reset code.');
+        }
+
+        passwordResetOtpSentAt = new Date().toISOString();
+        syncPasswordResetOtpTimer();
+        showForgotPasswordMessage(payload.message || 'If an account exists for this email, a reset code has been sent.', 'success');
+      } catch (error) {
+        showForgotPasswordMessage(error.message, 'error');
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    });
+
+    document.getElementById('forgot-password-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submitButton = event.target.querySelector('button[type="submit"]');
+      const originalText = submitButton.textContent;
+
+      const email = document.getElementById('reset-email').value.trim();
+      const code = document.getElementById('reset-code').value.trim();
+      const newPassword = document.getElementById('reset-new-password').value;
+
+      hideForgotPasswordMessage();
+
+      if (!email || !code || !newPassword) {
+        showForgotPasswordMessage('Fill in your email, OTP code, and new password.', 'error');
+        return;
+      }
+
+      try {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Resetting...';
+        const response = await fetch(`${API_BASE_URL}/users/password-reset/confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, code, newPassword })
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload.error || 'Failed to reset password.');
+        }
+
+        showAuthMessage(payload.message || 'Password reset successful. You can now log in.', 'success');
+        closeForgotPasswordModal();
+        document.getElementById('password').value = '';
+      } catch (error) {
+        showForgotPasswordMessage(error.message, 'error');
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+      }
+    });
+
     (function () {
       const nav = document.querySelector('nav');
-      let lastY = window.scrollY, ticking = false;
+      let lastY = window.scrollY;
+      let ticking = false;
       window.addEventListener('scroll', () => {
         if (!ticking) {
           window.requestAnimationFrame(() => {
