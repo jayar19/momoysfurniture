@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const admin = require('firebase-admin');
+const nodemailer = require('nodemailer');
 const { verifyToken, verifyAdmin } = require('../middleware/auth');
 
 const db = admin.firestore();
@@ -66,44 +67,40 @@ function buildOtpEmailText({ code, fullName }) {
 }
 
 async function sendMailerSendEmail({ to, subject, html, text }) {
-  const apiKey = process.env.MAILERSEND_API_KEY;
-  const from = process.env.MAILERSEND_FROM_EMAIL;
-  const fromName = process.env.MAILERSEND_FROM_NAME || "Momoy's Furniture";
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+  const fromName = process.env.GMAIL_FROM_NAME || "Momoy's Furniture";
 
-  if (!apiKey || !from) {
-    const error = new Error('Email verification is not configured on the server. Please set MAILERSEND_API_KEY and MAILERSEND_FROM_EMAIL.');
+  if (!gmailUser || !gmailAppPassword) {
+    const error = new Error('Email verification is not configured on the server. Please set GMAIL_USER and GMAIL_APP_PASSWORD.');
     error.status = 500;
     throw error;
   }
 
-  const response = await fetch('https://api.mailersend.com/v1/email', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest',
-      Authorization: `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      from: {
-        email: from,
-        name: fromName
-      },
-      to: [to],
-      subject,
-      html,
-      text
-    })
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: gmailUser,
+      pass: gmailAppPassword
+    }
   });
 
-  const payload = await response.json().catch(() => ({}));
-  const messageId = response.headers.get('x-message-id') || payload?.id || payload?.message_id || null;
-  if (!response.ok || !messageId) {
-    const error = new Error(payload?.message || payload?.error || 'Failed to send email verification code.');
+  let info;
+  try {
+    info = await transporter.sendMail({
+      from: `"${fromName}" <${gmailUser}>`,
+      to: to.email,
+      subject,
+      text,
+      html
+    });
+  } catch (sendError) {
+    const error = new Error(sendError.message || 'Failed to send email verification code.');
     error.status = 502;
     throw error;
   }
 
-  return messageId;
+  return info.messageId || null;
 }
 
 async function uploadToImgBb({ imageBase64, fileName, mimeType }) {
