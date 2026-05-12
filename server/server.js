@@ -71,7 +71,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/api/payments/paymongo/webhook', express.raw({ type: 'application/json' }));
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' }));
 
 // API Routes (must come before static files)
 const productRoutes      = require('./routes/products');

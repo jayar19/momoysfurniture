@@ -3,6 +3,109 @@ const ORDER_AI_STORAGE_KEY = 'momoysOrderAiSessions';
 let activeOrderChatId = null;
 let loadedOrders = [];
 let orderAiSessions = loadOrderAiSessions();
+let ordersVerificationProfile = null;
+
+function getVerificationBadgeMarkup(record) {
+  const color = record.isApproved ? '#1f7a3e' : (record.hasUploadedId ? '#9a6700' : '#9f1239');
+  const background = record.isApproved ? '#e8f5e9' : (record.hasUploadedId ? '#fff7e6' : '#fff1f2');
+  return `<span style="display: inline-flex; align-items: center; padding: 0.35rem 0.8rem; border-radius: 999px; background: ${background}; color: ${color}; font-weight: 700; font-size: 0.9rem;">${record.statusLabel}</span>`;
+}
+
+function renderProfileVerificationPanel(profile) {
+  const panel = document.getElementById('profile-verification-panel');
+  if (!panel || typeof userVerification === 'undefined') return;
+
+  const record = userVerification.getVerificationRecord(profile);
+  const summaryText = !record.hasUploadedId
+    ? 'You need to upload a valid ID before you can place your first order.'
+    : (record.isApproved
+        ? 'Your ID has already been approved. Future orders can proceed normally.'
+        : (record.orderUsedWhilePending
+            ? 'Your ID is still pending review and your one pending-verification order has already been used.'
+            : 'Your ID is pending admin review, but you still have one allowed order available.'));
+
+  panel.style.display = 'block';
+  panel.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+      <div>
+        <h2 style="margin-bottom: 0.35rem;">My Profile Verification</h2>
+        <p style="margin: 0; color: #667085;">This section shows the ID linked to your account and whether admin approval is already complete.</p>
+      </div>
+      <div>${getVerificationBadgeMarkup(record)}</div>
+    </div>
+    <div style="margin-top: 1rem; background: #f8fafc; border-radius: 10px; padding: 1rem;">
+      <p style="margin: 0 0 0.8rem; color: #334155;"><strong>Current access:</strong> ${summaryText}</p>
+      ${record.hasUploadedId ? `
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-start;">
+          <a href="${record.imageUrl}" target="_blank" rel="noopener">
+            <img src="${record.thumbUrl}" alt="Uploaded verification ID" style="width: 180px; max-width: 100%; border-radius: 10px; border: 1px solid #dbe4ee; object-fit: cover;">
+          </a>
+          <div>
+            <p style="margin: 0 0 0.45rem;"><strong>ID Type:</strong> ${record.idLabel}</p>
+            <p style="margin: 0 0 0.45rem;"><strong>Uploaded:</strong> ${userVerification.formatVerificationDate(record.uploadedAt)}</p>
+            <p style="margin: 0 0 0.75rem;"><strong>Approved:</strong> ${record.isApproved ? userVerification.formatVerificationDate(record.approvedAt) : 'Pending admin review'}</p>
+            <a href="${record.imageUrl}" target="_blank" rel="noopener" class="btn btn-secondary">View Uploaded ID</a>
+          </div>
+        </div>
+      ` : `
+        <form id="orders-verification-upload-form" style="display: grid; gap: 0.85rem; max-width: 480px;">
+          <div>
+            <label for="orders-verification-id-label" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">ID Type</label>
+            <input id="orders-verification-id-label" type="text" value="Government ID" maxlength="80" style="width: 100%; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px;">
+          </div>
+          <div>
+            <label for="orders-verification-id-file" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Upload ID Image</label>
+            <input id="orders-verification-id-file" type="file" accept="image/png,image/jpeg,image/webp" style="width: 100%;">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: fit-content;">Upload ID for Verification</button>
+        </form>
+      `}
+    </div>
+  `;
+
+  const uploadForm = document.getElementById('orders-verification-upload-form');
+  if (uploadForm) {
+    uploadForm.addEventListener('submit', submitVerificationUploadFromOrders);
+  }
+}
+
+async function refreshOrdersVerification(forceRefresh = false) {
+  const panel = document.getElementById('profile-verification-panel');
+  if (!panel || typeof userVerification === 'undefined') return;
+
+  panel.style.display = 'block';
+  panel.innerHTML = '<p style="margin: 0; color: #64748b;">Loading verification status...</p>';
+
+  try {
+    ordersVerificationProfile = await userVerification.loadCurrentUserProfile(forceRefresh);
+    renderProfileVerificationPanel(ordersVerificationProfile);
+  } catch (error) {
+    panel.innerHTML = `<p style="margin: 0; color: #b42318;">${escapeHtml(error.message)}</p>`;
+  }
+}
+
+async function submitVerificationUploadFromOrders(event) {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const fileInput = document.getElementById('orders-verification-id-file');
+  const labelInput = document.getElementById('orders-verification-id-label');
+  const submitButton = form.querySelector('button[type="submit"]');
+  const originalText = submitButton.textContent;
+
+  try {
+    submitButton.disabled = true;
+    submitButton.textContent = 'Uploading...';
+    await userVerification.uploadVerificationId(fileInput.files[0], labelInput.value.trim() || 'Government ID');
+    showMessage('Your ID was uploaded successfully and is now awaiting admin approval.', 'success');
+    await refreshOrdersVerification(true);
+  } catch (error) {
+    showMessage(error.message, 'error');
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = originalText;
+  }
+}
 
 async function loadUserOrders() {
   const user = auth.currentUser;
@@ -718,6 +821,9 @@ document.addEventListener('keydown', (event) => {
 
 // Initialize - wait for backend and auth
 if (document.getElementById('orders-container')) {
+  window.addEventListener('verification-updated', () => {
+    refreshOrdersVerification(true);
+  });
   auth.onAuthStateChanged(async (user) => {
     if (user) {
       // Wait for backend to be ready
@@ -725,6 +831,7 @@ if (document.getElementById('orders-container')) {
         console.log('Waiting for backend before loading orders...');
         await waitForBackend();
       }
+      refreshOrdersVerification();
       console.log('Loading orders...');
       loadUserOrders();
     } else {

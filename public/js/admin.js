@@ -106,6 +106,133 @@ function setEl(id, value) {
   if (el) el.textContent = value;
 }
 
+function escapeAdminHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getVerificationStatusText(user) {
+  if (!user?.verificationIdUrl) return 'ID Required';
+  return user.verificationStatus === 'approved' ? 'Approved' : 'Pending Approval';
+}
+
+function getVerificationStatusStyle(user) {
+  if (!user?.verificationIdUrl) {
+    return 'background: #fff1f2; color: #9f1239;';
+  }
+
+  if (user.verificationStatus === 'approved') {
+    return 'background: #e8f5e9; color: #1f7a3e;';
+  }
+
+  return 'background: #fff7e6; color: #9a6700;';
+}
+
+async function loadAdminUsers() {
+  const tbody = document.querySelector('#users-table tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Loading users...</td></tr>';
+
+  try {
+    const response = await authenticatedFetch(`${API_BASE_URL}/users`);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Failed to load users' }));
+      throw new Error(error.error || 'Failed to load users');
+    }
+
+    const users = await response.json();
+    if (!users.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No users found.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = users.map((user) => {
+      const imageUrl = user.verificationThumbUrl || user.verificationDisplayUrl || user.verificationIdUrl || '';
+      const statusText = getVerificationStatusText(user);
+      const canApprove = user.verificationIdUrl && user.verificationStatus !== 'approved';
+      const canDeleteVerification = Boolean(user.verificationIdUrl);
+
+      return `
+        <tr>
+          <td>
+            <strong>${escapeAdminHtml(user.fullName || 'No name')}</strong><br>
+            <small style="color: #64748b;">${escapeAdminHtml(user.role || 'user')}</small>
+          </td>
+          <td>${escapeAdminHtml(user.email || '')}</td>
+          <td>
+            <span style="display: inline-flex; align-items: center; padding: 0.35rem 0.8rem; border-radius: 999px; font-weight: 700; font-size: 0.85rem; ${getVerificationStatusStyle(user)}">${escapeAdminHtml(statusText)}</span>
+            <div style="margin-top: 0.5rem; color: #64748b; font-size: 0.85rem;">
+              Uploaded: ${user.verificationUploadedAt ? escapeAdminHtml(new Date(user.verificationUploadedAt).toLocaleDateString()) : 'Not yet'}
+            </div>
+            <div style="margin-top: 0.35rem; color: #64748b; font-size: 0.85rem;">
+              Pending-order use: ${user.verificationOrderUsed ? 'Used' : 'Available'}
+            </div>
+          </td>
+          <td>
+            ${imageUrl ? `
+              <a href="${imageUrl}" target="_blank" rel="noopener">
+                <img src="${imageUrl}" alt="User verification ID" style="width: 96px; height: 96px; object-fit: cover; border-radius: 10px; border: 1px solid #dbe4ee;">
+              </a>
+            ` : '<span style="color: #94a3b8;">No ID uploaded</span>'}
+          </td>
+          <td>
+            ${canApprove ? `<button class="btn btn-primary" onclick="approveUserVerification('${user.id}')" style="margin-bottom: 0.5rem;">Approve ID</button><br>` : ''}
+            ${canDeleteVerification ? `<button class="btn btn-danger" onclick="deleteUserVerification('${user.id}')">Delete ID</button>` : ''}
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (error) {
+    console.error('Error loading users:', error);
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #e74c3c;">${escapeAdminHtml(error.message)}</td></tr>`;
+  }
+}
+
+async function approveUserVerification(userId) {
+  if (!confirm('Approve this user ID so the customer can order normally?')) return;
+
+  try {
+    const response = await authenticatedFetch(`${API_BASE_URL}/users/${userId}/verification/approve`, {
+      method: 'PUT'
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Failed to approve ID' }));
+      throw new Error(error.error || 'Failed to approve ID');
+    }
+
+    alert('User ID approved successfully.');
+    loadAdminUsers();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function deleteUserVerification(userId) {
+  if (!confirm('Delete this uploaded ID? The customer will need to upload a new one before ordering again.')) return;
+
+  try {
+    const response = await authenticatedFetch(`${API_BASE_URL}/users/${userId}/verification`, {
+      method: 'DELETE'
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Failed to delete ID' }));
+      throw new Error(error.error || 'Failed to delete ID');
+    }
+
+    alert('Uploaded ID deleted. The customer must upload a new ID before ordering again.');
+    loadAdminUsers();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
 // Add product form
 if (document.getElementById('add-product-form')) {
   document.getElementById('add-product-form').addEventListener('submit', async (e) => {
@@ -613,5 +740,6 @@ auth.onAuthStateChanged(user => {
 
   if (document.getElementById('total-earned')) loadDashboardStats();
   if (document.getElementById('products-table')) loadAdminProducts();
+  if (document.getElementById('users-table')) loadAdminUsers();
   if (document.getElementById('orders-table')) loadAdminOrders();
 });

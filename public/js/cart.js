@@ -1,3 +1,125 @@
+let cartVerificationProfile = null;
+
+function getCheckoutButton() {
+  return document.getElementById('checkout-btn');
+}
+
+function setCheckoutAvailability(record) {
+  const checkoutBtn = getCheckoutButton();
+  if (!checkoutBtn) return;
+
+  checkoutBtn.disabled = !record.canPlaceOrder;
+  checkoutBtn.style.opacity = record.canPlaceOrder ? '1' : '0.65';
+  checkoutBtn.title = record.canPlaceOrder ? '' : record.blockedReason;
+}
+
+function getVerificationStatusMarkup(record) {
+  const color = record.isApproved ? '#1f7a3e' : (record.hasUploadedId ? '#9a6700' : '#9f1239');
+  const background = record.isApproved ? '#e8f5e9' : (record.hasUploadedId ? '#fff7e6' : '#fff1f2');
+
+  return `<span style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.8rem; border-radius: 999px; background: ${background}; color: ${color}; font-weight: 700; font-size: 0.9rem;">${record.statusLabel}</span>`;
+}
+
+function renderCartVerificationCard(profile) {
+  const container = document.getElementById('verification-card');
+  if (!container) return;
+
+  const record = userVerification.getVerificationRecord(profile);
+  setCheckoutAvailability(record);
+
+  const helperText = !record.hasUploadedId
+    ? 'Upload one valid ID to unlock ordering and checkout.'
+    : (record.isApproved
+        ? 'Your ID has been approved. You can continue ordering normally.'
+        : (record.orderUsedWhilePending
+            ? 'Your one pending-verification order has already been used. Please wait for admin approval before ordering again.'
+            : 'Your ID is under review. You can place one order while waiting for admin approval.'));
+
+  container.style.display = 'block';
+  container.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+      <div>
+        <h2 style="margin-bottom: 0.35rem;">Verification ID</h2>
+        <p style="margin: 0; color: #667085;">A valid ID is required before checkout. Upload is one-time only unless an admin deletes it.</p>
+      </div>
+      <div>${getVerificationStatusMarkup(record)}</div>
+    </div>
+    <div style="margin-top: 1rem; background: #f8fafc; border-radius: 10px; padding: 1rem;">
+      <p style="margin: 0 0 0.65rem; color: #334155;"><strong>Status note:</strong> ${helperText}</p>
+      ${record.hasUploadedId ? `
+        <div style="display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap;">
+          <a href="${record.imageUrl}" target="_blank" rel="noopener">
+            <img src="${record.thumbUrl}" alt="Uploaded verification ID" style="width: 160px; max-width: 100%; border-radius: 10px; border: 1px solid #dbe4ee; object-fit: cover;">
+          </a>
+          <div>
+            <p style="margin: 0 0 0.45rem;"><strong>ID Type:</strong> ${record.idLabel}</p>
+            <p style="margin: 0 0 0.45rem;"><strong>Uploaded:</strong> ${userVerification.formatVerificationDate(record.uploadedAt)}</p>
+            <p style="margin: 0 0 0.7rem;"><strong>Approved:</strong> ${record.isApproved ? userVerification.formatVerificationDate(record.approvedAt) : 'Pending admin review'}</p>
+            <a href="${record.imageUrl}" target="_blank" rel="noopener" class="btn btn-secondary">View Uploaded ID</a>
+          </div>
+        </div>
+      ` : `
+        <form id="verification-upload-form" style="display: grid; gap: 0.85rem; max-width: 480px;">
+          <div>
+            <label for="verification-id-label" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">ID Type</label>
+            <input id="verification-id-label" type="text" value="Government ID" maxlength="80" style="width: 100%; padding: 0.8rem; border: 1px solid #cbd5e1; border-radius: 8px;">
+          </div>
+          <div>
+            <label for="verification-id-file" style="display: block; margin-bottom: 0.35rem; font-weight: 600;">Upload ID Image</label>
+            <input id="verification-id-file" type="file" accept="image/png,image/jpeg,image/webp" style="width: 100%;">
+            <p style="margin: 0.4rem 0 0; color: #64748b; font-size: 0.9rem;">Accepted formats: JPG, PNG, WEBP.</p>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: fit-content;">Upload ID for Verification</button>
+        </form>
+      `}
+    </div>
+  `;
+
+  const uploadForm = document.getElementById('verification-upload-form');
+  if (uploadForm) {
+    uploadForm.addEventListener('submit', submitVerificationUploadFromCart);
+  }
+}
+
+async function refreshCartVerification(forceRefresh = false) {
+  const container = document.getElementById('verification-card');
+  if (!container || typeof userVerification === 'undefined') return;
+
+  container.style.display = 'block';
+  container.innerHTML = '<p style="margin: 0; color: #64748b;">Loading verification status...</p>';
+
+  try {
+    cartVerificationProfile = await userVerification.loadCurrentUserProfile(forceRefresh);
+    renderCartVerificationCard(cartVerificationProfile);
+  } catch (error) {
+    setCheckoutAvailability({ canPlaceOrder: false, blockedReason: error.message });
+    container.innerHTML = `<p style="margin: 0; color: #b42318;">${error.message}</p>`;
+  }
+}
+
+async function submitVerificationUploadFromCart(event) {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const fileInput = document.getElementById('verification-id-file');
+  const labelInput = document.getElementById('verification-id-label');
+  const submitButton = form.querySelector('button[type="submit"]');
+  const originalText = submitButton.textContent;
+
+  try {
+    submitButton.disabled = true;
+    submitButton.textContent = 'Uploading...';
+    await userVerification.uploadVerificationId(fileInput.files[0], labelInput.value.trim() || 'Government ID');
+    showMessage('Your ID was uploaded successfully and is now pending review.', 'success');
+    await refreshCartVerification(true);
+  } catch (error) {
+    showMessage(error.message, 'error');
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = originalText;
+  }
+}
+
 // Load cart
 function loadCart() {
   const cart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -127,6 +249,21 @@ async function checkout() {
   const cart = JSON.parse(localStorage.getItem('cart') || '[]');
   if (cart.length === 0) {
     alert('Your cart is empty');
+    return;
+  }
+
+  try {
+    const profile = await userVerification.loadCurrentUserProfile(true);
+    const verification = userVerification.getVerificationRecord(profile);
+    cartVerificationProfile = profile;
+    renderCartVerificationCard(profile);
+
+    if (!verification.canPlaceOrder) {
+      alert(verification.blockedReason);
+      return;
+    }
+  } catch (error) {
+    alert(error.message);
     return;
   }
   
@@ -286,11 +423,15 @@ function setupAgreementModal() {
 // Initialize
 if (document.getElementById('cart-items')) {
   setupAgreementModal();
+  window.addEventListener('verification-updated', () => {
+    refreshCartVerification(true);
+  });
   auth.onAuthStateChanged((user) => {
     if (!user) {
       window.location.href = '/login.html';
     } else {
       loadCart();
+      refreshCartVerification();
     }
   });
 }

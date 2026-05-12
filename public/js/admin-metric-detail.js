@@ -138,12 +138,13 @@ const metricConfigs = {
     secondaryLabel: 'Admins',
     secondaryValue: items => items.filter(item => item.role === 'admin').length,
     tableTitle: 'User Accounts',
-    columns: ['Name', 'Email', 'Role', 'Created'],
+    columns: ['Name', 'Email', 'Role', 'Verification', 'Created'],
     renderRow: user => `
       <tr>
         <td>${escapeHtml(user.fullName || 'No name')}</td>
         <td>${escapeHtml(user.email || '')}</td>
         <td>${escapeHtml(user.role || 'customer')}</td>
+        <td>${user.verificationIdUrl ? (user.verificationStatus === 'approved' ? 'Approved' : 'Pending Approval') : 'ID Required'}</td>
         <td>${formatDate(user.createdAt)}</td>
       </tr>
     `

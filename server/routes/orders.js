@@ -6,10 +6,19 @@ const { verifyToken, verifyAdmin } = require('../middleware/auth');
 // Get db from admin
 const db = admin.firestore();
 
-async function getUserRole(uid) {
+async function getUserRecord(uid) {
   const userDoc = await db.collection('users').doc(uid).get();
-  if (!userDoc.exists) return 'customer';
-  return userDoc.data().role || 'customer';
+  if (!userDoc.exists) {
+    return { ref: db.collection('users').doc(uid), exists: false, data: {}, role: 'customer' };
+  }
+
+  const data = userDoc.data() || {};
+  return {
+    ref: userDoc.ref,
+    exists: true,
+    data,
+    role: data.role || 'customer'
+  };
 }
 
 async function getAccessibleOrder(orderId, uid) {
@@ -20,7 +29,7 @@ async function getAccessibleOrder(orderId, uid) {
   }
 
   const orderData = doc.data();
-  const role = await getUserRole(uid);
+  const { role } = await getUserRecord(uid);
   const isAdmin = role === 'admin';
 
   if (!isAdmin && orderData.userId !== uid) {
@@ -34,6 +43,23 @@ async function getAccessibleOrder(orderId, uid) {
 router.post('/', verifyToken, async (req, res) => {
   try {
     const { items, totalAmount, downPayment, shippingAddress } = req.body;
+    const userRecord = await getUserRecord(req.user.uid);
+    const userData = userRecord.data || {};
+    const hasVerificationId = Boolean(userData.verificationIdUrl);
+    const verificationStatus = userData.verificationStatus || 'missing';
+    const verificationOrderUsed = Boolean(userData.verificationOrderUsed);
+
+    if (!hasVerificationId) {
+      return res.status(403).json({
+        error: 'Please upload a valid ID before placing an order.'
+      });
+    }
+
+    if (verificationStatus !== 'approved' && verificationOrderUsed) {
+      return res.status(403).json({
+        error: 'Your ID is still pending approval, and your one allowed order has already been used. Please wait for admin approval.'
+      });
+    }
     
     const orderData = {
       userId: req.user.uid,
@@ -51,6 +77,12 @@ router.post('/', verifyToken, async (req, res) => {
     };
     
     const docRef = await db.collection('orders').add(orderData);
+    await userRecord.ref.set({
+      verificationOrderUsed: verificationStatus === 'approved' ? verificationOrderUsed : true,
+      lastOrderAt: orderData.createdAt,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
     res.status(201).json({ id: docRef.id, ...orderData });
   } catch (error) {
     res.status(500).json({ error: error.message });
