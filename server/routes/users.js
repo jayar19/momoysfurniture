@@ -56,6 +56,26 @@ function generateOtpCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
+function buildOtpEmailHtml({ code, fullName }) {
+  const safeName = fullName ? `${fullName},` : 'Hello,';
+  return `
+    <div style="font-family: Arial, sans-serif; color: #111; line-height: 1.6;">
+      <p>${safeName}</p>
+      <p>Your Momoy's Furniture verification code is:</p>
+      <div style="font-size: 32px; font-weight: 700; letter-spacing: 8px; padding: 12px 18px; background: #fff7e6; border: 1px solid #facc15; display: inline-block; border-radius: 12px;">
+        ${code}
+      </div>
+      <p style="margin-top: 16px;">This code expires in 10 minutes.</p>
+      <p>If you did not request this code, you can ignore this email.</p>
+    </div>
+  `;
+}
+
+function buildOtpEmailText({ code, fullName }) {
+  const safeName = fullName ? `${fullName},` : 'Hello,';
+  return `${safeName}\n\nYour Momoy's Furniture verification code is: ${code}\n\nThis code expires in 10 minutes.\n\nIf you did not request this code, you can ignore this email.`;
+}
+
 function buildPasswordResetEmailHtml({ code, fullName }) {
   const safeName = fullName ? `${fullName},` : 'Hello,';
   return `
