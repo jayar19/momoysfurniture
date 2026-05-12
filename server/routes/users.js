@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const admin = require('firebase-admin');
+const Brevo = require('@getbrevo/brevo');
 const { verifyToken, verifyAdmin } = require('../middleware/auth');
 
 const db = admin.firestore();
