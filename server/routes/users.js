@@ -77,8 +77,6 @@ function buildPasswordResetEmailText({ code, fullName }) {
   return `${safeName}\n\nYou requested to reset your Momoy's Furniture password. Your reset code is: ${code}\n\nThis code expires in 10 minutes.\n\nIf you did not request this password reset, you can ignore this email.`;
 }
 
-const Brevo = require('@getbrevo/brevo');
-
 async function sendMailerSendEmail({ to, subject, html, text }) {
   const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) {
