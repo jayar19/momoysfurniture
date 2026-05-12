@@ -3,56 +3,477 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Track Your Delivery</title>
-  
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png">
+  <link rel="apple-touch-icon" href="/images/logo.png">
+  <title>Track Your Delivery - MOMOY'S Furniture</title>
+
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
-  <!-- Optional: Tailwind / your CSS -->
+  <!-- Site CSS -->
   <link rel="stylesheet" href="/css/styles.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
   <style>
+    /* ── Page Hero ── */
+    .tracking-hero {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      padding: 3rem 1.5rem 2.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tracking-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 60% 40%, rgba(250,204,21,0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .tracking-hero-icon {
+      font-size: 3rem;
+      margin-bottom: 0.75rem;
+      display: block;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .tracking-hero h1 {
+      font-family: 'Noto Serif Display', serif;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 700;
+      color: #fff;
+      margin: 0 0 0.5rem;
+      letter-spacing: -0.01em;
+    }
+
+    .tracking-hero p {
+      color: rgba(255,255,255,0.6);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    /* ── Layout ── */
+    .tracking-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+    }
+
+    /* ── Order Info Card ── */
+    .order-card {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #e8ecf0;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.25rem;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .order-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #f0f2f5;
+    }
+
+    .order-card-id {
+      font-family: 'Noto Serif Display', serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin: 0 0 0.2rem;
+    }
+
+    .order-card-date {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .order-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      font-family: 'DM Sans', sans-serif;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .order-status-badge.processing  { background: #fff7e6; color: #b45309; border: 1px solid #fde68a; }
+    .order-status-badge.confirmed   { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .order-status-badge.in_transit  { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .order-status-badge.delivered   { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+    .order-status-badge.cancelled   { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+    .order-status-badge.default     { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+
+    .order-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .order-meta-item label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #94a3b8;
+      margin-bottom: 0.3rem;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .order-meta-item span {
+      font-size: 0.95rem;
+      color: #1e293b;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+    }
+
+    /* ── Tracking Status Banner ── */
+    .tracking-banner {
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      font-family: 'DM Sans', sans-serif;
+      animation: fadeUp 0.4s ease 0.1s both;
+    }
+
+    .tracking-banner.success {
+      background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+      border: 1px solid #6ee7b7;
+      color: #065f46;
+    }
+
+    .tracking-banner.error {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #9a3412;
+    }
+
+    .tracking-banner.info {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      color: #0c4a6e;
+    }
+
+    .tracking-banner-icon {
+      font-size: 1.75rem;
+      flex-shrink: 0;
+    }
+
+    .tracking-banner-text strong {
+      display: block;
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 0.15rem;
+    }
+
+    .tracking-banner-text small {
+      font-size: 0.82rem;
+      opacity: 0.8;
+    }
+
+    /* ── Steps ── */
+    .tracking-steps {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0;
+      margin-bottom: 1.5rem;
+      padding: 1.25rem 1.5rem;
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #e8ecf0;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+      animation: fadeUp 0.4s ease 0.15s both;
+      position: relative;
+    }
+
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      flex: 1;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 18px;
+      left: 55%;
+      width: 90%;
+      height: 2px;
+      background: #e2e8f0;
+      z-index: 0;
+    }
+
+    .step.done:not(:last-child)::after,
+    .step.active:not(:last-child)::after {
+      background: linear-gradient(90deg, #facc15, #e2e8f0);
+    }
+
+    .step-dot {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      background: #f1f5f9;
+      border: 2px solid #e2e8f0;
+      color: #94a3b8;
+      transition: all 0.3s;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step.done .step-dot {
+      background: #1a1a2e;
+      border-color: #1a1a2e;
+      color: #facc15;
+    }
+
+    .step.active .step-dot {
+      background: #facc15;
+      border-color: #f59e0b;
+      color: #1a1a2e;
+      box-shadow: 0 0 0 4px rgba(250,204,21,0.25);
+    }
+
+    .step-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-align: center;
+      font-family: 'DM Sans', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .step.done .step-label,
+    .step.active .step-label {
+      color: #1a1a2e;
+    }
+
+    /* ── Map Card ── */
+    .map-card {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #e8ecf0;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+      animation: fadeUp 0.4s ease 0.2s both;
+    }
+
+    .map-card-header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #f0f2f5;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .map-card-header h3 {
+      font-family: 'Noto Serif Display', serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin: 0;
+    }
+
+    .map-card-header span {
+      font-size: 1.1rem;
+    }
+
     #map {
-      height: 500px;
+      height: 420px;
       width: 100%;
+    }
+
+    /* ── Info note ── */
+    .map-note {
+      padding: 0.75rem 1.5rem;
+      background: #fafafa;
+      border-top: 1px solid #f0f2f5;
+      font-size: 0.82rem;
+      color: #94a3b8;
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* ── Back button ── */
+    .back-row {
+      animation: fadeUp 0.4s ease 0.25s both;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.4rem;
+      border-radius: 999px;
+      background: #1a1a2e;
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .back-btn:hover {
+      background: #facc15;
+      color: #1a1a2e;
+      transform: translateY(-1px);
+    }
+
+    /* ── Skeleton loader ── */
+    .skeleton {
+      background: linear-gradient(90deg, #f0f2f5 25%, #e8ecf0 50%, #f0f2f5 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
       border-radius: 8px;
-      margin-top: 1rem;
     }
-    .alert {
-      padding: 1rem;
-      margin: 1rem 0;
-      border-radius: 6px;
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
     }
-    .alert-success { background-color: #d4edda; color: #155724; }
-    .alert-error { background-color: #f8d7da; color: #721c24; }
+
+    .skeleton-line {
+      height: 14px;
+      margin-bottom: 10px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .tracking-steps { padding: 1rem 0.75rem; gap: 0; }
+      .step-label { font-size: 0.65rem; }
+      #map { height: 300px; }
+      .order-meta-grid { grid-template-columns: 1fr 1fr; }
+    }
   </style>
 </head>
-<body class="bg-gray-100 font-sans">
+<body>
 
-  <header class="p-4 bg-blue-600 text-white">
-    <h1 class="text-2xl font-bold">Track Your Delivery</h1>
-  </header>
+  <!-- ── Nav ── -->
+  <nav>
+    <div class="nav-container">
+      <a href="/" class="nav-brand">
+        <img src="/images/logo.png" alt="Momoy's Furniture Logo" class="nav-logo">
+        <span>Momoy's Furniture</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/products.html">Products</a></li>
+        <li><a href="/cart.html">Cart</a></li>
+        <li><a href="/orders.html">My Orders</a></li>
+        <li><a href="#" id="logout-btn">Log Out</a></li>
+      </ul>
+    </div>
+  </nav>
 
-  <main class="p-4 max-w-4xl mx-auto">
+  <!-- ── Hero ── -->
+  <div class="tracking-hero">
+    <span class="tracking-hero-icon"></span>
+    <h1>Track Your Delivery</h1>
+    <p>Updates on your Momoy's Furniture order route</p>
+  </div>
+
+  <!-- ── Main Content ── -->
+  <div class="tracking-wrap">
+
     <!-- Order Info -->
-    <div id="order-info" class="bg-white p-4 rounded shadow"></div>
+    <div id="order-info" class="order-card">
+      <div class="skeleton skeleton-line" style="width:40%;height:20px;margin-bottom:1rem"></div>
+      <div class="skeleton skeleton-line" style="width:70%"></div>
+      <div class="skeleton skeleton-line" style="width:55%"></div>
+      <div class="skeleton skeleton-line" style="width:60%"></div>
+    </div>
 
-    <!-- Tracking Status -->
+    <!-- Delivery Steps -->
+    <div class="tracking-steps" id="tracking-steps">
+      <div class="step" data-step="processing">
+        <div class="step-dot">📋</div>
+        <span class="step-label">Processing</span>
+      </div>
+      <div class="step" data-step="confirmed">
+        <div class="step-dot">✅</div>
+        <span class="step-label">Confirmed</span>
+      </div>
+      <div class="step" data-step="in_transit">
+        <div class="step-dot">🚚</div>
+        <span class="step-label">In Transit</span>
+      </div>
+      <div class="step" data-step="delivered">
+        <div class="step-dot">🏠</div>
+        <span class="step-label">Delivered</span>
+      </div>
+    </div>
+
+    <!-- Tracking Status Banner -->
     <div id="tracking-status"></div>
 
     <!-- Map -->
-    <div id="map"></div>
-
-    <!-- Back Button -->
-    <div class="mt-4">
-      <a href="/orders.html" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Back to Orders</a>
+    <div class="map-card">
+      <div class="map-card-header">
+        <span>🗺️</span>
+        <h3>Live Delivery Map</h3>
+      </div>
+      <div id="map"></div>
+      <div class="map-note">
+        🏪 <strong style="color:#1a1a2e;margin-right:0.25rem">Shop</strong> to
+        <strong style="color:#1a1a2e;margin: 0 0.25rem">🏠 Your Address</strong>
+        — Map updates automatically when admin sets a new location.
+      </div>
     </div>
-  </main>
 
-<!-- Leaflet JS -->
+    <!-- Back -->
+    <div class="back-row">
+      <a href="/orders.html" class="back-btn">← Back to My Orders</a>
+    </div>
+
+  </div>
+
+  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-  <!-- Firebase & Auth -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -60,7 +481,146 @@
   <script src="/js/firebase-config.js"></script>
   <script src="/js/auth.js"></script>
 
+  <!-- Override renderOrderInfo and renderTrackingStatus for this page's design -->
+  <script>
+    // Step progress tracker
+    const STEP_ORDER = ['processing', 'confirmed', 'in_transit', 'delivered'];
+
+    function updateSteps(status) {
+      const steps = document.querySelectorAll('.tracking-steps .step');
+      const currentIndex = STEP_ORDER.indexOf(status);
+
+      steps.forEach((step, i) => {
+        step.classList.remove('done', 'active');
+        if (i < currentIndex) step.classList.add('done');
+        else if (i === currentIndex) step.classList.add('active');
+      });
+    }
+
+    // Override renderOrderInfo from tracking.js
+    window.renderOrderInfoOverride = function(order) {
+      const itemsList = (order.items || [])
+        .map(i => `${i.productName} ×${i.quantity}`)
+        .join(' &nbsp;·&nbsp; ');
+
+      const status = order.deliveryStatus || order.status || 'processing';
+      const statusLabels = {
+        processing: 'Processing',
+        confirmed: 'Confirmed',
+        in_transit: 'In Transit',
+        delivered: 'Delivered',
+        cancelled: 'Cancelled'
+      };
+      const statusLabel = statusLabels[status] || status.replace(/_/g, ' ');
+      const badgeClass = Object.keys(statusLabels).includes(status) ? status : 'default';
+
+      document.getElementById('order-info').innerHTML = `
+        <div class="order-card-header">
+          <div>
+            <p class="order-card-id">Order #${(order.id || '').substring(0, 8).toUpperCase()}</p>
+            <p class="order-card-date">${order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) : ''}</p>
+          </div>
+          <span class="order-status-badge ${badgeClass}">${statusLabel}</span>
+        </div>
+        <div class="order-meta-grid">
+          <div class="order-meta-item">
+            <label>Items</label>
+            <span>${itemsList || 'N/A'}</span>
+          </div>
+          <div class="order-meta-item">
+            <label>Delivery Address</label>
+            <span>${order.shippingAddress || 'N/A'}</span>
+          </div>
+          <div class="order-meta-item">
+            <label>Total Amount</label>
+            <span>₱${(order.totalAmount || 0).toLocaleString()}</span>
+          </div>
+          ${order.estimatedDelivery ? `
+          <div class="order-meta-item">
+            <label>Est. Delivery</label>
+            <span>${new Date(order.estimatedDelivery).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' })}</span>
+          </div>` : ''}
+        </div>
+      `;
+
+      updateSteps(status);
+    };
+
+    // Override renderTrackingStatus from tracking.js
+    window.renderTrackingStatusOverride = function(order) {
+      const statusEl = document.getElementById('tracking-status');
+      const status = order.deliveryStatus || order.status || '';
+      const updatedAt = order.currentLocation?.updatedAt
+        ? new Date(order.currentLocation.updatedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+        : null;
+
+      if (status === 'in_transit' || status === 'out_for_delivery') {
+        statusEl.innerHTML = `
+          <div class="tracking-banner success">
+            <div class="tracking-banner-icon">🚚</div>
+            <div class="tracking-banner-text">
+              <strong>Your order is on the way!</strong>
+              <small>${updatedAt ? `Driver location last updated at ${updatedAt}` : 'The map below shows your delivery route.'}</small>
+            </div>
+          </div>`;
+      } else if (status === 'delivered') {
+        statusEl.innerHTML = `
+          <div class="tracking-banner success">
+            <div class="tracking-banner-icon">🎉</div>
+            <div class="tracking-banner-text">
+              <strong>Your order has been delivered!</strong>
+              <small>Thank you for choosing Momoy's Furniture.</small>
+            </div>
+          </div>`;
+      } else if (status === 'confirmed') {
+        statusEl.innerHTML = `
+          <div class="tracking-banner info">
+            <div class="tracking-banner-icon">📦</div>
+            <div class="tracking-banner-text">
+              <strong>Order confirmed — preparing for dispatch.</strong>
+              <small>We'll update this page once your order is out for delivery.</small>
+            </div>
+          </div>`;
+      } else if (status === 'cancelled') {
+        statusEl.innerHTML = `
+          <div class="tracking-banner error">
+            <div class="tracking-banner-icon">❌</div>
+            <div class="tracking-banner-text">
+              <strong>This order has been cancelled.</strong>
+              <small>Please contact us if you have questions.</small>
+            </div>
+          </div>`;
+      } else {
+        statusEl.innerHTML = `
+          <div class="tracking-banner info">
+            <div class="tracking-banner-icon">🕐</div>
+            <div class="tracking-banner-text">
+              <strong>Your order is being processed.</strong>
+              <small>Delivery tracking will appear here once your order is dispatched.</small>
+            </div>
+          </div>`;
+      }
+    };
+  </script>
+
   <!-- Tracking JS -->
   <script src="/js/tracking.js"></script>
+  <script src="/js/mobile-nav.js"></script>
+
+  <!-- Hook overrides into tracking.js render cycle -->
+  <script>
+    // Patch tracking.js to use our custom renderers
+    const _origRenderOrderOnMap = window.renderOrderOnMap;
+
+    // tracking.js calls renderOrderInfo and renderTrackingStatus internally.
+    // We override those globals so our styled versions are called instead.
+    if (typeof renderOrderInfo === 'function') {
+      window.renderOrderInfo = window.renderOrderInfoOverride;
+    }
+    if (typeof renderTrackingStatus === 'function') {
+      window.renderTrackingStatus = window.renderTrackingStatusOverride;
+    }
+  </script>
+
 </body>
 </html>
