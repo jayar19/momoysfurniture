@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const admin = require('firebase-admin');
-const Brevo = require('@getbrevo/brevo');
 const { verifyToken, verifyAdmin } = require('../middleware/auth');
 
 const db = admin.firestore();
@@ -85,22 +84,32 @@ async function sendMailerSendEmail({ to, subject, html, text }) {
     throw error;
   }
 
-  const client = Brevo.ApiClient.instance;
-  client.authentications['api-key'].apiKey = apiKey;
-
-  const api = new Brevo.TransactionalEmailsApi();
   const fromName = process.env.GMAIL_FROM_NAME || "Momoy's Furniture";
   const fromEmail = process.env.BREVO_FROM_EMAIL || process.env.GMAIL_USER;
 
-  const result = await api.sendTransacEmail({
-    sender: { name: fromName, email: fromEmail },
-    to: [{ email: to.email, name: to.name || to.email }],
-    subject,
-    htmlContent: html,
-    textContent: text
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': apiKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      sender: { name: fromName, email: fromEmail },
+      to: [{ email: to.email, name: to.name || to.email }],
+      subject,
+      htmlContent: html,
+      textContent: text
+    })
   });
 
-  return result?.messageId || null;
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(payload?.message || 'Failed to send email.');
+    error.status = 502;
+    throw error;
+  }
+
+  return payload?.messageId || null;
 }
 
 async function uploadToImgBb({ imageBase64, fileName, mimeType }) {
