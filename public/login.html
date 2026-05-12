@@ -223,7 +223,7 @@
   height: 32px;
   padding: 0 14px;
 
-  border: 1px solid rgba(255,255,255,0.2);
+  border: none;
   border-radius: 20px;
 
   background: rgba(255,255,255,0.2);
@@ -236,15 +236,15 @@
 
   cursor: pointer;
   transition: all 0.3s ease;
+
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
-/* HOVER */
 .toggle-password:hover {
   background: rgba(255,255,255,0.3);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  transform: translateY(-50%) translateY(-1px);
 }
 
-/* CLICK */
 .toggle-password:active {
   transform: translateY(-50%) scale(0.96);
 }
