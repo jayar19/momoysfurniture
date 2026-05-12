@@ -431,13 +431,40 @@ async function checkout() {
       const checkoutBtn    = document.getElementById('checkout-btn');
       const originalText   = checkoutBtn ? checkoutBtn.textContent : '';
       if (checkoutBtn) { checkoutBtn.textContent = 'Creating Order...'; checkoutBtn.disabled = true; }
-      
+
+      // Geocode the delivery address to lat/lng for the tracking map
+      let deliveryCoords = null;
+      try {
+        const geoRes = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`,
+          { headers: { 'Accept-Language': 'en' } }
+        );
+        const geoData = await geoRes.json();
+        if (geoData.length) {
+          deliveryCoords = {
+            lat: parseFloat(geoData[0].lat),
+            lng: parseFloat(geoData[0].lon),
+            updatedAt: new Date().toISOString()
+          };
+        }
+      } catch (geoErr) {
+        // Geocoding failed silently — order still goes through
+        // Admin can still set location manually from the dashboard
+        console.warn('Geocoding failed:', geoErr.message);
+      }
+
       const token = await getAuthToken();
-      
+
       const orderResponse = await fetch(`${API_BASE_URL}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ items: cart, totalAmount, downPayment, shippingAddress })
+        body: JSON.stringify({
+          items: cart,
+          totalAmount,
+          downPayment,
+          shippingAddress,
+          ...(deliveryCoords && { currentLocation: deliveryCoords })
+        })
       });
       
       const order = await orderResponse.json();
